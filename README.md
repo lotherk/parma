@@ -1,145 +1,162 @@
-# Rarma
+# Parma - Python to SQF Transpiler
 
-Rarma is a crossplatform framework for [Bohemia Interactive](https://www.bistudio.com/)'s [Armed Assault](http://arma3.com/) version 3 written in ruby.
+Parma is a Python-based framework for [Bohemia Interactive](https://www.bistudio.com/)'s [Armed Assault](http://arma3.com/) version 3. It provides a transpiler for converting Python code to [SQF](https://community.bistudio.com/wiki/ArmA:_Introduction_to_Scripting) scripting language, supporting object-oriented programming and modern Python features.
 
-It offers a [transcompiler](http://en.wikipedia.org/wiki/Source-to-source_compiler) for source-to-source conversion from ruby to [SQF](https://community.bistudio.com/wiki/ArmA:_Introduction_to_Scripting) code, thus support for object oriented scripting and many more.
+## Features
 
-Its main purpose is to create an developer friendly environment, that blah blah blah.
-
-## Supported Systems
-
-Tested:
-  - Windows 8.1 (With [RubyInstaller for Windows](http://rubyinstaller.org/) and [Git for Windows](https://msysgit.github.io/))
-  - Linux
+- **Python to SQF Transpilation**: Write ArmA scripts in Python
+- **Object-Oriented Support**: Classes and methods translate to SQF equivalents
+- **Modern Python**: Uses Python 3.8+ with type hints and modern tooling
+- **Cross-Platform**: Works on Windows, Linux, and macOS
+- **CLI Tool**: Easy-to-use command-line interface
+- **ArmA Integration**: Includes DLL for runtime Python execution
 
 ## Installation
 
-
-
-## Development Environment
-
-Rarma provides you an easy method to setup all the tools you need to develope ArmA code in a comfortable way. It will install steamCMD, ArmA 3 Dedicated Server files and CPBO.
-
-### Requirements
-
-#### Windows
-
-You need to install [RubyInstaller for Windows](http://rubyinstaller.org/) and [Git for Windows](https://msysgit.github.io/). We'll use the ```Git Bash``` as our command line.
-
-#### Linux
-
-You need to install the following libraries to make steamCMD and cpbo work.
-
-##### Debian/Ubuntu
-
-```
-sudo apt-get install lib32gcc1 libboost-all-dev
-```
-
-##### Other Distributions
-
-Check yourself. (TODO)
-
-### Create the environment
-
-Before you can create the environment, you have to create a ```development.yml``` inside the ```config``` directory. For this you can simply copy the existing [development.yml.example](config/development.yml.example). You then have to set your steamid in ```development.yml``` as we're using steam to install the ArmA 3 Dedicated Server files.
-
-After editing ```development.yml```, run
-
-```
-$ rake environment
-```
-
-and let the magic happen.
-
-You should see a message telling you that "*Rarma development environment successfully installed.*", hopefully.
-
-## Usage
-
-### Installation
-
-```bash
-gem install rarma
-```
-
-Or build from source:
+### From Source
 
 ```bash
 git clone https://github.com/lotherk/rarma.git
 cd rarma
-bundle install
-gem build rarma.gemspec
-gem install rarma-*.gem
+pip install -e .
 ```
 
-### Docker Usage
-
-Build and run with Docker:
+### Using pip (future)
 
 ```bash
-# Build the image
-docker build -t rarma .
-
-# Compile a Ruby file to SQF
-docker run -v $(pwd):/workspace rarma compile my_file.rb
-
-# Create a new mission
-docker run -v $(pwd):/workspace rarma new --mission MyMission
-
-# Interactive shell
-docker run -it -v $(pwd):/workspace rarma bash
+pip install parma
 ```
 
-### CLI Commands
+## Usage
+
+### Basic Compilation
 
 ```bash
-# Compile Ruby to SQF
-rarma compile file.rb                    # Compile single file
-rarma compile src/ -o output/           # Compile directory
-rarma compile -I include/ file.rb       # With include paths
+# Compile a Python file to SQF
+parma compile my_script.py
 
-# Create new projects
-rarma new --mission MyMission           # Create mission skeleton
-rarma new --addon MyAddon              # Create addon skeleton
+# Specify output file
+parma compile my_script.py -o output.sqf
 
-# Get help
-rarma --help
-rarma compile --help
+# Verbose output
+parma compile my_script.py --verbose
 ```
 
 ### Example
 
-Create a simple Ruby script (`hello.rb`):
+Create a Python script (`mission.py`):
 
-```ruby
-class HelloWorld
-  def greet
-    puts "Hello from ArmA!"
-  end
-end
+```python
+class ArmaMission:
+    def __init__(self):
+        self.mission_name = "Python Mission"
+        self.player_count = 0
 
-hello = HelloWorld.new
-hello.greet
+    def add_player(self, name):
+        self.player_count += 1
+        print(f"Player {name} joined")
+
+    def start(self):
+        if self.player_count > 0:
+            print(f"Mission {self.mission_name} starting!")
+        else:
+            print("No players to start mission")
+
+# Run the mission
+mission = ArmaMission()
+mission.add_player("Alice")
+mission.start()
 ```
 
 Compile to SQF:
 
 ```bash
-rarma compile hello.rb
+parma compile mission.py
 ```
 
-This generates `hello.rb.sqf` with SQF code equivalent to the Ruby script.
+This generates `mission.py.sqf` with SQF code that uses the OOP macro system.
+
+## DLL Integration
+
+Parma includes `ParmaExtension.dll` for runtime Python execution in ArmA:
+
+```sqf
+// Initialize Python in SQF
+"ParmaExtension" callExtension "INIT";
+
+// Execute Python code
+_result = "ParmaExtension" callExtension "EXEC print('Hello from Python!')";
+
+// Clean up
+"ParmaExtension" callExtension "CLEANUP";
+```
+
+## Docker Usage
+
+Build and run with Docker:
+
+```bash
+# Build the image
+docker build -t parma .
+
+# Compile a file
+docker run -v $(pwd):/workspace parma compile test_mission.py
+
+# Interactive shell
+docker run -it -v $(pwd):/workspace parma bash
+```
+
+## Project Structure
+
+```
+src/parma/
+├── __init__.py          # Package initialization
+├── cli.py               # Command-line interface
+└── transpiler.py        # Core transpilation logic
+
+dll/
+├── ParmaExtension.cpp   # ArmA extension DLL
+├── CMakeLists.txt       # Build configuration
+└── README.md           # DLL documentation
+```
 
 ## Development
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `bin/console` for an interactive prompt that will allow you to experiment.
+### Setup
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release` to create a git tag for the version, push git commits and tags, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+```bash
+# Install development dependencies
+pip install -e ".[dev]"
+
+# Run tests
+pytest
+
+# Run linter
+flake8 src/
+
+# Format code
+black src/
+```
+
+### Building the DLL
+
+```bash
+cd dll
+# Unix
+./build.sh
+# Windows
+cmake -G "Visual Studio 16 2019" .
+cmake --build . --config Release
+```
 
 ## Contributing
 
-1. Fork it ( https://github.com/[my-github-username]/rarma/fork )
-2. Create your feature branch (`git checkout -b my-new-feature`)
-3. Commit your changes (`git commit -am 'Add some feature'`)
-4. Push to the branch (`git push origin my-new-feature`)
-5. Create a new Pull Request
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests
+5. Submit a pull request
+
+## License
+
+MIT License - see LICENSE file for details

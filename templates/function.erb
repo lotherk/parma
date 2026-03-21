@@ -1,5 +1,0 @@
-<%   @functions.each do |m| -%>
-<%= m[:name] -%> = {
-<%= ERB.new(load_template("method"), nil, "-",eoutvar='_sub09').result(binding) -%>
-};
-<%   end -%>
