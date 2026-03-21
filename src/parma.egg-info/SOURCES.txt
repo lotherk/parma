@@ -1,0 +1,12 @@
+LICENSE.txt
+README.md
+pyproject.toml
+src/parma/__init__.py
+src/parma/cli.py
+src/parma/transpiler.py
+src/parma.egg-info/PKG-INFO
+src/parma.egg-info/SOURCES.txt
+src/parma.egg-info/dependency_links.txt
+src/parma.egg-info/entry_points.txt
+src/parma.egg-info/requires.txt
+src/parma.egg-info/top_level.txt
