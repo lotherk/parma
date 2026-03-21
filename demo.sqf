@@ -3,32 +3,102 @@
  */
 #include "macros/oop.h"
 
-CLASS("TestMission")
+CLASS("LootSystem")
 PUBLIC FUNCTION("array","constructor") {
-    MEMBER("name","Demo Mission");
-    MEMBER("players",[]);
+    MEMBER("garage_classes",["Land_Garage_V1_F", "Land_Garage_V2_F", "Land_i_Garage_V1_F", "Land_i_Garage_V2_F", "Land_Garage_Row_F", "Land_GarageOffice_01_F"]);
+    MEMBER("weapon_classes",["arifle_MX_F", "arifle_MX_SW_F", "arifle_MXC_F", "srifle_EBR_F", "LMG_Mk200_F", "hgun_P07_F", "hgun_ACPC2_F", "launch_RPG32_F", "arifle_TRG21_F", "arifle_Katiba_F"]);
+    MEMBER("magazine_classes",["30Rnd_65x39_caseless_mag", "100Rnd_65x39_caseless_mag", "20Rnd_556x45_UW_mag", "30Rnd_556x45_Stanag", "16Rnd_9x21_Mag", "9Rnd_45ACP_Mag", "RPG32_F", "1Rnd_HE_Grenade_shell", "HandGrenade", "SmokeShell"]);
+    MEMBER("item_classes",["FirstAidKit", "Medikit", "ToolKit", "MineDetector", "Binocular", "ItemGPS", "ItemMap", "ItemCompass", "ItemWatch", "ItemRadio", "NVGoggles", "Rangefinder", "Laserdesignator", "B_UavTerminal", "muzzle_snds_H", "optic_Arco", "acc_flashlight", "V_PlateCarrier1_rgr", "H_HelmetB", "U_B_CombatUniform_mcam"]);
+    MEMBER("found_buildings",[]);
 };
 
-PUBLIC FUNCTION("any","add_player") {
-this.players pushBack player_name
+PUBLIC FUNCTION("any","find_buildings") {
+    MEMBER("found_buildings",[[["position", [(unknown + 50), (unknown + 25), 0]], ["class", "Land_Garage_V1_F"]], [["position", [(unknown - 30), (unknown + 40), 0]], ["class", "Land_Garage_V2_F"]], [["position", [(unknown + 80), (unknown - 15), 0]], ["class", "Land_i_Garage_V1_F"]]]);
+    MEMBER("found_buildings",nil)
+};
+
+PUBLIC FUNCTION("any","generate_loot_for_building") {
+    loot = [];
+    for "_i" from 0 to (2 - 1) do {
+        weapon = MEMBER("weapon_classes",nil) select (floor random count MEMBER("weapon_classes",nil));
+        magazine = MEMBER("magazine_classes",nil) select (floor random count MEMBER("magazine_classes",nil));
+loot pushBack [["type", "weapon"], ["class", weapon], ["magazine", magazine]]
+        ;
+    };
+    for "_i" from 0 to (3 - 1) do {
+        weapon = MEMBER("weapon_classes",nil) select (floor random count MEMBER("weapon_classes",nil));
+        magazine = MEMBER("magazine_classes",nil) select (floor random count MEMBER("magazine_classes",nil));
+loot pushBack [["type", "rifle"], ["class", weapon], ["magazine", magazine]]
+        ;
+    };
+    ammo_count = MEMBER("randint",[5, 10]);
+    for "_i" from 0 to (ammo_count - 1) do {
+        magazine = MEMBER("magazine_classes",nil) select (floor random count MEMBER("magazine_classes",nil));
+loot pushBack [["type", "magazine"], ["class", magazine]]
+        ;
+    };
+    item_count = MEMBER("randint",[3, 8]);
+    for "_i" from 0 to (item_count - 1) do {
+        item = MEMBER("item_classes",nil) select (floor random count MEMBER("item_classes",nil));
+loot pushBack [["type", "item"], ["class", item]]
+        ;
+    };
+    loot
+};
+
+PUBLIC FUNCTION("any","populate_building") {
+    building_pos = unknown;
+    { // for loop
+        offset_x = unknown + (random (3 - unknown));
+        offset_y = unknown + (random (3 - unknown));
+        item_pos = [(unknown + offset_x), (unknown + offset_y), (unknown + 0.1)];
+        if (unknown == "weapon") then {
+            weapon_holder = unknown;
+        } else {
+            if (unknown == "magazine") then {
+                mag_box = unknown;
+            } else {
+                if (unknown == "item") then {
+                    item_box = unknown;
+                };
+            };
+        };
+diag_log "Placed " + str(unknown) + ": " + str(unknown) + " at " + str(item_pos);
+        ;
+    } forEach loot;
+};
+
+PUBLIC FUNCTION("any","initialize_loot_system") {
+diag_log "Initializing Loot Population System...";
     ;
-diag_log "Added player: " + str(player_name);
+    buildings = MEMBER("find_buildings",[mission_center, search_radius]);
+diag_log "Found " + str(count buildings) + " buildings to populate with loot";
+    ;
+    { // for loop
+diag_log "Populating building: " + str(unknown) + " at " + str(unknown);
+        ;
+        loot = MEMBER("generate_loot_for_building",[building]);
+diag_log "Generated " + str(count loot) + " loot items";
+        ;
+MEMBER("populate_building",[building, loot])
+        ;
+diag_log "---";
+        ;
+    } forEach buildings;
+diag_log "Loot population system initialized successfully!";
     ;
 };
 
-PUBLIC FUNCTION("any","start") {
-diag_log "Starting mission: " + str(MEMBER("name",nil));
-    ;
-diag_log "Total players: " + str(count MEMBER("players",nil));
-    ;
+PUBLIC FUNCTION("any","get_loot_statistics") {
+    total_buildings = count MEMBER("found_buildings",nil);
+    [["buildings_populated", total_buildings], ["buildings_found", total_buildings]]
 };
 
 ENDCLASS;
 
-mission = ["new"] call TestMission;
-MEMBER("add_player",["Alice"])
+loot_system = ["new"] call LootSystem;
+MEMBER("initialize_loot_system",[arg, 750])
 ;
-MEMBER("add_player",["Bob"])
-;
-MEMBER("start",nil)
+stats = MEMBER("get_loot_statistics",nil);
+diag_log "Loot System Stats: " + str(stats);
 ;
