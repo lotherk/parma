@@ -26,8 +26,8 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/lotherk/rarma"
-Repository = "https://github.com/lotherk/rarma"
+Homepage = "https://github.com/lotherk/parma"
+Repository = "https://github.com/lotherk/parma"
 
 [project.scripts]
 parma = "parma.cli:main"

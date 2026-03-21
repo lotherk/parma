@@ -1,4 +1,4 @@
-# Test Python script for rarma transpilation
+# Test Python script for Parma transpilation
 class TestMission:
     def __init__(self):
         self.name = "Python Demo Mission"

@@ -19,12 +19,12 @@ RUN gem install bundler && bundle install
 # Copy the rest of the application
 COPY . .
 
-# Build and install the rarma gem
-RUN gem build rarma.gemspec && gem install rarma-*.gem
+# Install Parma
+RUN pip install -e .
 
 # Create a directory for projects
 RUN mkdir /workspace
 WORKDIR /workspace
 
 # Default command
-CMD ["rarma", "--help"]
+CMD ["parma", "--help"]
