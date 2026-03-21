@@ -15,26 +15,26 @@ PUBLIC FUNCTION("array","constructor") {
 
 PUBLIC FUNCTION("any","add_objective") {
     objective = [["id", objective_id], ["description", description], ["required", required], ["completed", unknown], ["progress", 0], ["max_progress", 100]];
-this.objectives pushBack objective
+this.objectives pushBack objective;
     ;
 };
 
 PUBLIC FUNCTION("any","complete_objective") {
     { // for loop
         if (unknown == objective_id) then {
-this.completed_objectives pushBack objective_id
+this.completed_objectives pushBack objective_id;
             ;
-diag_log "Objective completed: " + str(unknown);
+diag_log unknown;
             ;
         };
     } forEach MEMBER("objectives",nil);
 };
 
 PUBLIC FUNCTION("any","get_mission_status") {
-    completed_count = count unknown;
-    total_objectives = count MEMBER("objectives",nil);
-    required_completed = count unknown;
-    [["name", MEMBER("mission_name",nil)], ["objectives_completed", completed_count], ["total_objectives", total_objectives], ["required_completed", required_completed], ["success", required_completed == count unknown]]
+    completed_count = (count unknown);
+    total_objectives = (count MEMBER("objectives",nil));
+    required_completed = (count unknown);
+    [["name", MEMBER("mission_name",nil)], ["objectives_completed", completed_count], ["total_objectives", total_objectives], ["required_completed", required_completed], ["success", required_completed == (count unknown)]]
 };
 
 PUBLIC FUNCTION("any","check_win_condition") {
@@ -43,7 +43,7 @@ PUBLIC FUNCTION("any","check_win_condition") {
 };
 
 PUBLIC FUNCTION("any","initialize_mission") {
-diag_log "Initializing mission: " + str(MEMBER("mission_name",nil));
+diag_log unknown;
     ;
 MEMBER("add_objective",["recon", "Conduct reconnaissance of the AO", arg])
     ;
@@ -53,7 +53,7 @@ MEMBER("add_objective",["extract", "Extract all friendly units", arg])
     ;
 MEMBER("add_objective",["bonus", "Destroy enemy communications", arg])
     ;
-diag_log "Added " + str(count MEMBER("objectives",nil)) + " objectives";
+diag_log unknown;
     ;
 };
 
@@ -75,14 +75,14 @@ MEMBER("complete_objective",["extract"])
 PUBLIC FUNCTION("any","end_mission") {
     status = MEMBER("get_mission_status",nil);
     if (unknown) then {
-diag_log "MISSION SUCCESS: " + str(MEMBER("mission_name",nil));
+diag_log unknown;
         ;
-diag_log "Completed " + str(unknown) + "/" + str(unknown) + " objectives";
+diag_log unknown;
         ;
     } else {
-diag_log "MISSION FAILED: " + str(MEMBER("mission_name",nil));
+diag_log unknown;
         ;
-diag_log "Only completed " + str(unknown) + " required objectives";
+diag_log unknown;
         ;
     };
 };

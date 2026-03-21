@@ -202,7 +202,7 @@ class SQFTranspiler(ast.NodeVisitor):
                     else:
                         args.append(self._visit_expr(arg))
                 args_str = ", ".join(args)
-                self.output.append(f"{obj} pushBack {args_str}")
+                self.output.append(f"{obj} pushBack {args_str};")
             elif method == "clear":
                 if obj == "this.created_units":
                     self.output.append('MEMBER("created_units",[])')
@@ -228,47 +228,67 @@ class SQFTranspiler(ast.NodeVisitor):
                     self.output.append(f'MEMBER("{method}",nil)')
 
     def _handle_print(self, node: ast.Call) -> None:
-        """Handle print() calls - convert to diag_log."""
+        """Handle print() calls - convert to diag_log with proper SQF syntax."""
         if node.args:
             arg = node.args[0]
             if isinstance(arg, ast.Str):
+                # Simple string
                 self.output.append(f'diag_log "{arg.s}";')
-            elif isinstance(arg, ast.JoinedStr):
-                # Handle f-strings
-                parts = []
-                for value in arg.values:
-                    if isinstance(value, ast.Str):
-                        parts.append(f'"{value.s}"')
-                    elif isinstance(value, ast.FormattedValue):
-                        expr = self._visit_expr(value.value)
-                        parts.append(f'str({expr})')
-                    else:
-                        parts.append(self._visit_expr(value))
-                formatted = " + ".join(parts)
-                self.output.append(f'diag_log {formatted};')
-            elif isinstance(arg, ast.BinOp):
-                # Handle string concatenation
-                formatted = self._visit_expr(arg)
-                self.output.append(f'diag_log {formatted};')
+            elif isinstance(arg, ast.BinOp) and self._is_string_concatenation(arg):
+                # String concatenation - convert to format[]
+                parts = self._extract_string_parts(arg)
+                if len(parts) == 2:
+                    format_str = f'format["%1%2", {parts[0]}, {parts[1]}]'
+                    self.output.append(f'diag_log {format_str};')
+                else:
+                    # Fallback for complex concatenation
+                    formatted = self._visit_expr(arg)
+                    self.output.append(f'diag_log {formatted};')
             elif isinstance(arg, ast.Name):
+                # Variable
                 self.output.append(f'diag_log {arg.id};')
             else:
                 expr = self._visit_expr(arg)
                 self.output.append(f'diag_log {expr};')
 
+    def _is_string_concatenation(self, node: ast.BinOp) -> bool:
+        """Check if a binary operation is string concatenation."""
+        if isinstance(node.op, ast.Add):
+            # Check if both sides are strings or string operations
+            left_is_str = isinstance(node.left, ast.Str) or (
+                isinstance(node.left, ast.BinOp) and self._is_string_concatenation(node.left)
+            )
+            right_is_str = isinstance(node.right, ast.Str) or (
+                isinstance(node.right, ast.BinOp) and self._is_string_concatenation(node.right)
+            )
+            return left_is_str and right_is_str
+        return False
+
+    def _extract_string_parts(self, node: ast.BinOp) -> list:
+        """Extract parts from string concatenation."""
+        parts = []
+        if isinstance(node.left, ast.Str):
+            parts.append(f'"{node.left.s}"')
+        elif isinstance(node.left, ast.BinOp):
+            parts.extend(self._extract_string_parts(node.left))
+        else:
+            parts.append(self._visit_expr(node.left))
+
+        if isinstance(node.right, ast.Str):
+            parts.append(f'"{node.right.s}"')
+        elif isinstance(node.right, ast.BinOp):
+            parts.extend(self._extract_string_parts(node.right))
+        else:
+            parts.append(self._visit_expr(node.right))
+
+        return parts
+
     def _handle_len(self, node: ast.Call) -> None:
-        """Handle len() calls - convert to count."""
+        """Handle len() calls - convert to count with proper SQF syntax."""
         if node.args:
             arg = node.args[0]
-            if isinstance(arg, ast.Name):
-                self.output.append(f'count {arg.id}')
-            elif isinstance(arg, ast.Attribute):
-                # Handle len(self.attribute)
-                attr_access = self._visit_expr(arg)
-                self.output.append(f'count {attr_access}')
-            else:
-                expr = self._visit_expr(arg)
-                self.output.append(f'count {expr}')
+            expr = self._visit_expr(arg)
+            self.output.append(f"(count {expr})")
 
     def _handle_range(self, node: ast.Call) -> None:
         """Handle range() calls - convert to SQF for loop."""
@@ -408,26 +428,27 @@ class SQFTranspiler(ast.NodeVisitor):
             self._add_line(f"}} forEach {iter_expr};")
 
     def visit_Subscript(self, node: ast.Subscript) -> str:
-        """Handle subscript access like dict[key] or list[index]."""
+        """Handle subscript access like dict[key] or list[index] with proper SQF syntax."""
         value = self._visit_expr(node.value)
         if isinstance(node.slice, ast.Index):
-            # list[index] or dict[key]
+            # list[index] or dict[key] - use select command
             index_expr = getattr(node.slice, 'value', None)
             if index_expr:
                 index = self._visit_expr(index_expr)
-                return f"{value} select {index}"
+                return f"({value} select {index})"
         elif isinstance(node.slice, ast.Constant):
             # Handle dict['key'] style access
             if isinstance(node.slice.value, str):
                 key = node.slice.value
                 # For our unit structure, find the value by key
+                # Structure: [["type", value], ["position", value], ["side", value]]
                 if key == "position":
-                    return f"({value} select 1) select 1"  # [[type,value],[position,value],[side,value]] -> position value
+                    return f"(({value} select 1) select 1)"
                 elif key == "type":
-                    return f"({value} select 0) select 1"  # type value
+                    return f"(({value} select 0) select 1)"
                 elif key == "side":
-                    return f"({value} select 2) select 1"  # side value
-        return f"{value} select 0"  # Default fallback
+                    return f"(({value} select 2) select 1)"
+        return f"({value} select 0)"  # Default fallback with proper parentheses
 
     def _visit_expr(self, node: ast.AST) -> str:
         """Visit an expression and return its string representation."""
