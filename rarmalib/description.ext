@@ -1,4 +1,0 @@
-class Extended_PreInit_EventHandlers
-{
-xeh_init = "call compileFinal preprocessFileLineNumbers 'rarmalib\init.sqf';";
-};

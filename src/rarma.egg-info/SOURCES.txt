@@ -1,0 +1,12 @@
+LICENSE.txt
+README.md
+pyproject.toml
+src/rarma/__init__.py
+src/rarma/cli.py
+src/rarma/transpiler.py
+src/rarma.egg-info/PKG-INFO
+src/rarma.egg-info/SOURCES.txt
+src/rarma.egg-info/dependency_links.txt
+src/rarma.egg-info/entry_points.txt
+src/rarma.egg-info/requires.txt
+src/rarma.egg-info/top_level.txt

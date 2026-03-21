@@ -1,3 +1,0 @@
-require 'rarma/rake/task/build'
-
-# Add your own tasks here
