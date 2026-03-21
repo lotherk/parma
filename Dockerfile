@@ -1,5 +1,5 @@
-# Dockerfile for Rarma - Ruby ArmA Transpiler
-FROM ruby:2.7-slim
+# Dockerfile for Parma - Python to SQF Transpiler
+FROM python:3.11-slim
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -10,17 +10,14 @@ RUN apt-get update && apt-get install -y \
 # Set working directory
 WORKDIR /app
 
-# Copy gem files first for better caching
-COPY rarma.gemspec Gemfile* ./
+# Copy Python project files first for better caching
+COPY pyproject.toml ./
 
-# Install bundler and dependencies
-RUN gem install bundler && bundle install
+# Install Python dependencies
+RUN pip install --upgrade pip && pip install -e .
 
 # Copy the rest of the application
 COPY . .
-
-# Install Parma
-RUN pip install -e .
 
 # Create a directory for projects
 RUN mkdir /workspace
