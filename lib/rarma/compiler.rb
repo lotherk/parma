@@ -24,7 +24,7 @@ module Rarma::Compiler
       Rarma.logger.debug "  searching #{path}"
       filename = File.join(path, '/', "#{file}.rb")
       Rarma.logger.debug "     checking #{filename}"
-      if File.exists? filename
+      if File.exist? filename
         Assembly.load_file filename
         return true
       end

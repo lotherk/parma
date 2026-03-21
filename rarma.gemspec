@@ -12,15 +12,18 @@ Gem::Specification.new do |spec|
   spec.description   = %q{ArmA Ruby Framework}
   spec.homepage      = "https://github.com/lotherk/rarma"
   spec.license       = "MIT"
+  spec.required_ruby_version = ">= 2.7"
 
   spec.files         = `git ls-files -z`.split("\x0").reject { |f| f.match(%r{^(test|spec|features)/}) }
 #  spec.bindir        = "exe"
   spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
-  spec.add_development_dependency "bundler", "~> 1.8"
-  spec.add_development_dependency "rake", "~> 10.0"
-  spec.add_dependency "sexp_processor"
-  spec.add_dependency "ruby_parser"
-  spec.add_dependency "colored"
+  spec.add_development_dependency "bundler", "~> 2.0"
+  spec.add_development_dependency "rake", "~> 13.0"
+  spec.add_development_dependency "rspec", "~> 3.12"
+  spec.add_development_dependency "rubocop", "~> 1.57"
+  spec.add_dependency "sexp_processor", "~> 4.16"
+  spec.add_dependency "ruby_parser", "~> 3.20"
+  spec.add_dependency "colorize", "~> 0.8"
 end

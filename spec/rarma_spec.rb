@@ -5,7 +5,7 @@ describe Rarma do
     expect(Rarma::VERSION).not_to be nil
   end
 
-  it 'does something useful' do
-    expect(false).to eq(true)
+  it 'has a logger' do
+    expect(Rarma.logger).not_to be nil
   end
 end

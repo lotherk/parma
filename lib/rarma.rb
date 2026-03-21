@@ -1,5 +1,5 @@
 require "logger"
-require "colored"
+require "colorize"
 require "rarma/version"
 require "rarma/logger"
 

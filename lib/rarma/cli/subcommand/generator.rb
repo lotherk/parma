@@ -46,7 +46,7 @@ USAGE
     end if files[:eval]
     skippers.each do |f|
       Rarma.logger.debug "Checking for #{f}"
-      if File.exists?("#{src}/#{f}")
+      if File.exist?("#{src}/#{f}")
         Rarma.logger.debug "Loading #{f}"
         stdout = StringIO.new
         $stdout = stdout

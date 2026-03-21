@@ -3,11 +3,11 @@ class Rarma::Rake::Task::Buildenv::Windows
 
   def install_steam
     super
-    unless File.exists?config['steamdir']
+    unless File.exist?config['steamdir']
       FileUtils.mkdir_p(config['steamdir'])
       Rake.sh "unzip #{@steamcmd_file} -d #{config['steamdir']}"
     else
-      puts "#{config['steamdir']} alrealdy exists, remove to reinstall".yellow
+      puts "#{config['steamdir']} alrealdy exists, remove to reinstall".colorize(:yellow)
     end
   end
 
