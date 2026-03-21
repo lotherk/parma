@@ -56,7 +56,79 @@ You should see a message telling you that "*Rarma development environment succes
 
 ## Usage
 
-TODO: Write usage instructions here
+### Installation
+
+```bash
+gem install rarma
+```
+
+Or build from source:
+
+```bash
+git clone https://github.com/lotherk/rarma.git
+cd rarma
+bundle install
+gem build rarma.gemspec
+gem install rarma-*.gem
+```
+
+### Docker Usage
+
+Build and run with Docker:
+
+```bash
+# Build the image
+docker build -t rarma .
+
+# Compile a Ruby file to SQF
+docker run -v $(pwd):/workspace rarma compile my_file.rb
+
+# Create a new mission
+docker run -v $(pwd):/workspace rarma new --mission MyMission
+
+# Interactive shell
+docker run -it -v $(pwd):/workspace rarma bash
+```
+
+### CLI Commands
+
+```bash
+# Compile Ruby to SQF
+rarma compile file.rb                    # Compile single file
+rarma compile src/ -o output/           # Compile directory
+rarma compile -I include/ file.rb       # With include paths
+
+# Create new projects
+rarma new --mission MyMission           # Create mission skeleton
+rarma new --addon MyAddon              # Create addon skeleton
+
+# Get help
+rarma --help
+rarma compile --help
+```
+
+### Example
+
+Create a simple Ruby script (`hello.rb`):
+
+```ruby
+class HelloWorld
+  def greet
+    puts "Hello from ArmA!"
+  end
+end
+
+hello = HelloWorld.new
+hello.greet
+```
+
+Compile to SQF:
+
+```bash
+rarma compile hello.rb
+```
+
+This generates `hello.rb.sqf` with SQF code equivalent to the Ruby script.
 
 ## Development
 
