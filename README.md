@@ -1,41 +1,3 @@
-<<<<<<< HEAD
-# Rarma - Ruby Arma Library
-
-This is rarma!
-
-## Compiler
-
-Examples:
-
-```
-rarma compile file.rb
-# -> file.rb.sqf
-```
-
-```
-rarma compile file.rb -o destdir
-# -> destdir/file.rb.sqf
-```
-
-```
-rarma compile srcdir
-# srcdir/file.rb -> srcdir/file.rb.sqf
-# srcdir/other_file.rb -> srcdir/other_file.rb.sqf
-```
-
-```
-rarma compile srcdir -o destdir
-# srcdir/file.rb -> destdir/file.rb.sqf
-# srcdir/other_file.rb -> destdir/other_file.rb.sqf
-```
-
-```
-rarma compile -i myinclude srcdir -o destdir
-# same as above plus copies myinclude into destdir
-# and every subfolder created during compile (not existing
-# subfolders in destdir that do not exist in srcdir)
-```
-=======
 # Rarma
 
 Rarma is a crossplatform framework for [Bohemia Interactive](https://www.bistudio.com/)'s [Armed Assault](http://arma3.com/) version 3 written in ruby.
@@ -109,4 +71,3 @@ To install this gem onto your local machine, run `bundle exec rake install`. To 
 3. Commit your changes (`git commit -am 'Add some feature'`)
 4. Push to the branch (`git push origin my-new-feature`)
 5. Create a new Pull Request
->>>>>>> 1aa7ba52591fcc54cd093333fabb12ce2eff0d34

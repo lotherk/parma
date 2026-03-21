@@ -8,22 +8,6 @@ Gem::Specification.new do |spec|
   spec.version       = Rarma::VERSION
   spec.authors       = ["Konrad Lother"]
   spec.email         = ["konrad@corpex.de"]
-<<<<<<< HEAD
-  spec.summary       = %q{Ruby Library for ArmA}
-  spec.description   = %q{Ruby Library for ArmA}
-  spec.homepage      = ""
-  spec.license       = "MIT"
-
-  spec.files         = `git ls-files -z`.split("\x0")
-  spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
-  spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
-  spec.require_paths = ["lib"]
-
-  spec.add_development_dependency "bundler", "~> 1.5"
-  spec.add_development_dependency "rake"
-  spec.add_dependency "ruby_parser"
-=======
-
   spec.summary       = %q{ArmA Ruby Framework}
   spec.description   = %q{ArmA Ruby Framework}
   spec.homepage      = "https://github.com/lotherk/rarma"
@@ -39,5 +23,4 @@ Gem::Specification.new do |spec|
   spec.add_dependency "sexp_processor"
   spec.add_dependency "ruby_parser"
   spec.add_dependency "colored"
->>>>>>> 1aa7ba52591fcc54cd093333fabb12ce2eff0d34
 end
