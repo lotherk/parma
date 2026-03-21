@@ -2,6 +2,29 @@
 
 Parma is a Python-based framework for [Bohemia Interactive](https://www.bistudio.com/)'s [Armed Assault](http://arma3.com/) version 3. It provides a transpiler for converting Python code to [SQF](https://community.bistudio.com/wiki/ArmA:_Introduction_to_Scripting) scripting language, supporting object-oriented programming and modern Python features.
 
+## Table of Contents
+
+- [Features](#features)
+- [Installation](#installation)
+  - [From Source](#from-source)
+  - [Using pip (future)](#using-pip-future)
+- [Usage](#usage)
+  - [Basic Compilation](#basic-compilation)
+  - [Example](#example)
+- [ArmA 3 Integration](#arma-3-integration)
+  - [Method 1: Using Transpiled SQF Code](#method-1-using-transpiled-sqf-code)
+  - [Method 2: Using ParmaExtension DLL (Runtime Python)](#method-2-using-parmaextension-dll-runtime-python)
+  - [Method 3: Addon Integration](#method-3-addon-integration)
+  - [Troubleshooting](#troubleshooting)
+  - [Best Practices](#best-practices)
+- [Project Structure](#project-structure)
+- [Development](#development)
+  - [Setup](#setup)
+  - [Building](#building)
+- [Docker Usage](#docker-usage)
+- [Contributing](#contributing)
+- [License](#license)
+
 ## Features
 
 - **Python to SQF Transpilation**: Write ArmA scripts in Python
