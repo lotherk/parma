@@ -16,6 +16,8 @@ class SQFTranspiler(ast.NodeVisitor):
         self.classes: Dict[str, Dict] = {}
         self.current_class: Optional[str] = None
         self.scopes: List[Dict[str, str]] = []  # Stack of variable scopes
+        self.imports: Dict[str, str] = {}  # Maps alias to module name
+        self.imported_functions: Dict[str, str] = {}  # Maps imported function names to SQF equivalents
 
     def _push_scope(self):
         """Push a new variable scope"""
@@ -147,6 +149,48 @@ class SQFTranspiler(ast.NodeVisitor):
         else:
             self._add_line("nil")
 
+    def visit_Import(self, node: ast.Import) -> None:
+        """Handle import statements."""
+        # For now, we'll ignore most imports as they don't translate directly to SQF
+        # But we can add special handling for specific modules if needed
+        for alias in node.names:
+            module_name = alias.name
+            as_name = alias.asname or module_name
+
+            # Track imports for method resolution
+            self.imports[as_name] = module_name
+
+            # Handle specific modules that might be useful
+            if module_name in ["math", "random"]:
+                # These are handled by built-in SQF functions or can be ignored
+                # Add a comment for clarity
+                self._add_line(f"// Imported {module_name} as {as_name}")
+            else:
+                # For unknown modules, add a warning comment
+                self._add_line(f"// Warning: Import of '{module_name}' not supported in SQF")
+
+    def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
+        """Handle from ... import statements."""
+        module_name = node.module or ""
+
+        for alias in node.names:
+            name = alias.name
+            as_name = alias.asname or name
+
+            # Handle specific imports that can be mapped to SQF
+            if module_name == "math":
+                if name in ["sqrt", "sin", "cos", "pi"]:
+                    self._add_line(f"// Imported math.{name} as {as_name}")
+                else:
+                    self._add_line(f"// Warning: math.{name} not supported in SQF")
+            elif module_name == "random":
+                if name in ["uniform", "choice", "randint"]:
+                    self._add_line(f"// Imported random.{name} as {as_name}")
+                else:
+                    self._add_line(f"// Warning: random.{name} not supported in SQF")
+            else:
+                self._add_line(f"// Warning: Import from '{module_name}' not supported in SQF")
+
     def visit_Expr(self, node: ast.Expr) -> None:
         """Handle expression statements."""
         if isinstance(node.value, ast.Call):
@@ -169,6 +213,18 @@ class SQFTranspiler(ast.NodeVisitor):
                 self._handle_range(node)
             elif func_name == "random":
                 self._handle_random(node)
+            # Handle math functions
+            elif func_name == "sqrt":
+                self._handle_math_sqrt(node)
+            elif func_name == "sin":
+                self._handle_math_sin(node)
+            elif func_name == "cos":
+                self._handle_math_cos(node)
+            # Handle random functions
+            elif func_name == "uniform":
+                self._handle_random_uniform(node)
+            elif func_name == "choice":
+                self._handle_random_choice(node)
             elif func_name in self.classes:
                 # Class instantiation
                 args = []
@@ -225,9 +281,10 @@ class SQFTranspiler(ast.NodeVisitor):
                 obj = "unknown"
 
             # Handle specific methods
-            if method == "uniform" and obj_name == "random":
+            obj_module = self.imports.get(obj_name, obj_name)
+            if method == "uniform" and obj_module == "random":
                 self._handle_random_uniform(node)
-            elif method == "choice" and obj_name == "random":
+            elif method == "choice" and obj_module == "random":
                 self._handle_random_choice(node)
             elif method == "append":
                 # List append
@@ -359,6 +416,27 @@ class SQFTranspiler(ast.NodeVisitor):
             arg = node.args[0]
             arg_str = self._visit_expr(arg)
             self.output.append(f"{arg_str} select (floor random count {arg_str})")
+
+    def _handle_math_sqrt(self, node: ast.Call) -> None:
+        """Handle math.sqrt() - convert to SQF sqrt."""
+        if node.args:
+            arg = self._visit_expr(node.args[0])
+            self.output.append(f"sqrt {arg}")
+
+    def _handle_math_sin(self, node: ast.Call) -> None:
+        """Handle math.sin() - convert to SQF sin (but SQF sin expects degrees)."""
+        if node.args:
+            arg = self._visit_expr(node.args[0])
+            # SQF sin expects degrees, Python sin expects radians
+            # Convert radians to degrees: arg * 180 / PI
+            self.output.append(f"sin ({arg} * 180 / 3.14159265359)")
+
+    def _handle_math_cos(self, node: ast.Call) -> None:
+        """Handle math.cos() - convert to SQF cos."""
+        if node.args:
+            arg = self._visit_expr(node.args[0])
+            # Convert radians to degrees
+            self.output.append(f"cos ({arg} * 180 / 3.14159265359)")
 
     def visit_Assign(self, node: ast.Assign) -> None:
         """Handle variable assignments."""
