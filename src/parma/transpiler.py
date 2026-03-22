@@ -318,8 +318,34 @@ class SQFTranspiler(ast.NodeVisitor):
                 self._handle_random(node)
             elif func_name == "enumerate":
                 self._handle_enumerate(node)
-            elif func_name == "len":
-                self._handle_len(node)
+            elif func_name == "zip":
+                self._handle_zip(node)
+            elif func_name == "reversed":
+                self._handle_reversed(node)
+            elif func_name == "isinstance":
+                self._handle_isinstance(node)
+            elif func_name == "str":
+                self._handle_str(node)
+            elif func_name == "int":
+                self._handle_int(node)
+            elif func_name == "float":
+                self._handle_float(node)
+            elif func_name == "sum":
+                self._handle_sum(node)
+            elif func_name == "max":
+                self._handle_max_min(node, "max")
+            elif func_name == "min":
+                self._handle_max_min(node, "min")
+            elif func_name == "all":
+                self._handle_all(node)
+            elif func_name == "any":
+                self._handle_any(node)
+            elif func_name == "abs":
+                self._handle_abs(node)
+            elif func_name == "round":
+                self._handle_round(node)
+            elif func_name == "bool":
+                self._handle_bool(node)
             # Handle math functions
             elif func_name == "sqrt":
                 self._handle_math_sqrt(node)
@@ -605,6 +631,221 @@ class SQFTranspiler(ast.NodeVisitor):
             self.output.append(arg)
         else:
             self.output.append("[]")
+
+    def _handle_zip(self, node: ast.Call) -> None:
+        """Handle zip() function - combine multiple arrays."""
+        if node.args:
+            # Convert arguments to expressions
+            args_expr = [self._visit_expr(arg) for arg in node.args]
+            args_str = ", ".join(args_expr)
+            # In SQF, we don't have a direct zip equivalent, but we can simulate it
+            # For now, just return the first array (this is a simplification)
+            self.output.append(f"({args_expr[0]}) // zip({args_str}) - simplified")
+        else:
+            self.output.append("[]")
+
+    def _handle_reversed(self, node: ast.Call) -> None:
+        """Handle reversed() function - reverse array order."""
+        if node.args:
+            arg = self._visit_expr(node.args[0])
+            # SQF has reverse command
+            self.output.append(f"reverse {arg}")
+        else:
+            self.output.append("reverse []")
+
+    def _handle_isinstance(self, node: ast.Call) -> None:
+        """Handle isinstance() function - type checking."""
+        if len(node.args) >= 2:
+            obj_expr = self._visit_expr(node.args[0])
+            type_arg = node.args[1]
+
+            if isinstance(type_arg, ast.Name):
+                type_name = type_arg.id
+                # Basic type checking - this is simplified
+                if type_name in ['int', 'float', 'str', 'list', 'dict']:
+                    self.output.append(f"(typeName {obj_expr} == {type_name})")
+                else:
+                    self.output.append(f"(typeName {obj_expr} == {type_name}) // isinstance check")
+            else:
+                type_expr = self._visit_expr(type_arg)
+                self.output.append(f"(typeName {obj_expr} == {type_expr}) // isinstance check")
+        else:
+            self.output.append("false // isinstance needs 2 arguments")
+
+    def _handle_str(self, node: ast.Call) -> None:
+        """Handle str() function - convert to string."""
+        if node.args:
+            arg = self._visit_expr(node.args[0])
+            self.output.append(f"str {arg}")
+        else:
+            self.output.append('""')
+
+    def _handle_int(self, node: ast.Call) -> None:
+        """Handle int() function - convert to integer."""
+        if node.args:
+            arg = self._visit_expr(node.args[0])
+            # SQF parseNumber can convert strings to numbers
+            self.output.append(f"(parseNumber {arg})")
+        else:
+            self.output.append("0")
+
+    def _handle_float(self, node: ast.Call) -> None:
+        """Handle float() function - convert to float."""
+        if node.args:
+            arg = self._visit_expr(node.args[0])
+            # SQF parseNumber can convert strings to numbers
+            self.output.append(f"(parseNumber {arg})")
+        else:
+            self.output.append("0.0")
+
+    def _handle_sum(self, node: ast.Call) -> None:
+        """Handle sum() function - sum all elements in array."""
+        if node.args:
+            arg = self._visit_expr(node.args[0])
+            # Use SQF's select and apply to sum elements
+            self.output.append(f"({arg} call BIS_fnc_arraySum)")
+        else:
+            self.output.append("0")
+
+    def _handle_max_min(self, node: ast.Call, func_type: str) -> None:
+        """Handle max() and min() functions."""
+        if node.args:
+            if len(node.args) == 1:
+                # Single array argument
+                arg = self._visit_expr(node.args[0])
+                if func_type == "max":
+                    self.output.append(f"({arg} call BIS_fnc_arrayMax)")
+                else:
+                    self.output.append(f"({arg} call BIS_fnc_arrayMin)")
+            else:
+                # Multiple arguments - find max/min of them
+                args_expr = [self._visit_expr(arg) for arg in node.args]
+                args_str = ", ".join(args_expr)
+                if func_type == "max":
+                    self.output.append(f"([ {args_str} ] call BIS_fnc_arrayMax)")
+                else:
+                    self.output.append(f"([ {args_str} ] call BIS_fnc_arrayMin)")
+        else:
+            self.output.append("0")
+
+    def visit_GeneratorExp(self, node: ast.GeneratorExp) -> str:
+        """Handle generator expressions - convert to lazy evaluation."""
+        # Generator expressions are similar to list comprehensions but lazy
+        # For SQF, we'll treat them similarly to list comprehensions
+        if len(node.generators) == 1:
+            generator = node.generators[0]
+            iter_expr = self._visit_expr(generator.iter)
+
+            # Handle the comprehension element
+            elt_expr = self._visit_expr(node.elt)
+
+            # Handle conditions (if clauses)
+            conditions = []
+            for cond in generator.ifs:
+                cond_expr = self._visit_expr(cond)
+                conditions.append(cond_expr)
+
+            if conditions:
+                # With conditions: select + apply
+                condition_str = " && ".join(f"({_cond})" for _cond in conditions)
+                return f"({iter_expr} select {{{condition_str}}} apply {{{elt_expr}}})"
+            else:
+                # Simple comprehension: just apply
+                return f"({iter_expr} apply {{{elt_expr}}})"
+        else:
+            # Multiple generators not supported yet
+            return f"[{self._visit_expr(node.elt)}] // Complex generator not fully supported"
+
+    def visit_Set(self, node: ast.Set) -> str:
+        """Handle set creation - convert to SQF array (sets not native in SQF)."""
+        elements = []
+        for elt in node.elts:
+            if isinstance(elt, ast.Str):
+                elements.append(f'"{elt.s}"')
+            elif isinstance(elt, ast.Num):
+                elements.append(str(elt.n))
+            elif isinstance(elt, ast.Constant):
+                if isinstance(elt.value, str):
+                    elements.append(f'"{elt.value}"')
+                else:
+                    elements.append(str(elt.value))
+            else:
+                elements.append(self._visit_expr(elt))
+
+        # SQF doesn't have native sets, so we return an array
+        # Could potentially add deduplication logic
+        return f"[{', '.join(elements)}] // Set converted to array"
+
+    def visit_SetComp(self, node: ast.SetComp) -> str:
+        """Handle set comprehensions."""
+        # Similar to list comprehensions but for sets
+        # SQF doesn't have sets, so treat as array comprehension
+        if len(node.generators) == 1:
+            generator = node.generators[0]
+            iter_expr = self._visit_expr(generator.iter)
+            elt_expr = self._visit_expr(node.elt)
+
+            conditions = []
+            for cond in generator.ifs:
+                cond_expr = self._visit_expr(cond)
+                conditions.append(cond_expr)
+
+            if conditions:
+                condition_str = " && ".join(f"({_cond})" for _cond in conditions)
+                return f"({iter_expr} select {{{condition_str}}} apply {{{elt_expr}}}) // Set comprehension"
+            else:
+                return f"({iter_expr} apply {{{elt_expr}}}) // Set comprehension"
+        else:
+            return f"[{self._visit_expr(node.elt)}] // Complex set comprehension not supported"
+
+    def _handle_all(self, node: ast.Call) -> None:
+        """Handle all() function - check if all elements are truthy."""
+        if node.args:
+            arg = self._visit_expr(node.args[0])
+            # In SQF, we can use a combination of select and count
+            self.output.append(f"(({arg} select {{!_x}}) isEqualTo [])")
+        else:
+            self.output.append("true")
+
+    def _handle_any(self, node: ast.Call) -> None:
+        """Handle any() function - check if any element is truthy."""
+        if node.args:
+            arg = self._visit_expr(node.args[0])
+            # Check if there's at least one truthy element
+            self.output.append(f"(count ({arg} select {{_x}}) > 0)")
+        else:
+            self.output.append("false")
+
+    def _handle_abs(self, node: ast.Call) -> None:
+        """Handle abs() function - absolute value."""
+        if node.args:
+            arg = self._visit_expr(node.args[0])
+            self.output.append(f"(abs {arg})")
+        else:
+            self.output.append("0")
+
+    def _handle_round(self, node: ast.Call) -> None:
+        """Handle round() function - round to nearest integer."""
+        if node.args:
+            arg = self._visit_expr(node.args[0])
+            if len(node.args) >= 2:
+                # Round to specified decimal places (simplified)
+                ndigits = self._visit_expr(node.args[1])
+                self.output.append(f"(round ({arg} * (10 ^ {ndigits})) / (10 ^ {ndigits}))")
+            else:
+                # Round to nearest integer
+                self.output.append(f"(round {arg})")
+        else:
+            self.output.append("0")
+
+    def _handle_bool(self, node: ast.Call) -> None:
+        """Handle bool() function - convert to boolean."""
+        if node.args:
+            arg = self._visit_expr(node.args[0])
+            # In SQF, most values are truthy, but we can check for specific falsy values
+            self.output.append(f"({arg} isNotEqualTo false && {{!isNil '{arg}'}})")
+        else:
+            self.output.append("false")
 
     def _handle_random(self, node: ast.Call) -> None:
         """Handle random module calls."""
@@ -1036,6 +1277,16 @@ class SQFTranspiler(ast.NodeVisitor):
         self._add_line("// Continue statement - not directly supported in SQF")
         self._add_line("// Consider restructuring the loop logic")
 
+    def visit_Assert(self, node: ast.Assert) -> None:
+        """Handle assert statements - convert to SQF assertions."""
+        test_expr = self._visit_expr(node.test)
+
+        if node.msg:
+            msg_expr = self._visit_expr(node.msg)
+            self._add_line(f"assert({test_expr}); // {msg_expr}")
+        else:
+            self._add_line(f"assert({test_expr});")
+
     def visit_Raise(self, node: ast.Raise) -> None:
         """Handle raise statements - convert to SQF error handling."""
         if node.exc:
@@ -1118,6 +1369,12 @@ class SQFTranspiler(ast.NodeVisitor):
             return self.visit_List(node)
         elif isinstance(node, ast.ListComp):
             return self.visit_ListComp(node)
+        elif isinstance(node, ast.GeneratorExp):
+            return self.visit_GeneratorExp(node)
+        elif isinstance(node, ast.Set):
+            return self.visit_Set(node)
+        elif isinstance(node, ast.SetComp):
+            return self.visit_SetComp(node)
         elif isinstance(node, ast.Dict):
             return self.visit_Dict(node)
         elif isinstance(node, ast.Lambda):
