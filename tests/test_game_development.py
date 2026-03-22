@@ -6,7 +6,12 @@ Tests all major features for production readiness.
 
 import math
 import random
+import sys
+from pathlib import Path
 from typing import List, Dict, Any, Optional
+
+# Add the examples directory to the path
+sys.path.insert(0, str(Path(__file__).parent.parent / "examples"))
 from game_framework import Vector3, Unit, Building, World, GameManager
 
 def test_math_functions():

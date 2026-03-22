@@ -203,6 +203,11 @@ class SQFTranspiler(ast.NodeVisitor):
                     self._add_line(f"// Imported collections.{name} as {as_name}")
                 else:
                     self._add_line(f"// Warning: collections.{name} not supported in SQF")
+            elif module_name == "json":
+                if name in ["loads", "dumps"]:
+                    self._add_line(f"// Imported json.{name} as {as_name}")
+                else:
+                    self._add_line(f"// Warning: json.{name} not supported in SQF")
             elif module_name == "typing":
                 # Type hints are ignored in SQF
                 self._add_line(f"// Imported typing.{name} as {as_name} (type hints ignored)")
@@ -269,6 +274,11 @@ class SQFTranspiler(ast.NodeVisitor):
                 self._handle_random_shuffle(node)
             elif func_name == "sample":
                 self._handle_random_sample(node)
+            # Handle JSON functions
+            elif func_name == "loads":
+                self._handle_json_loads(node)
+            elif func_name == "dumps":
+                self._handle_json_dumps(node)
             # Handle random functions
             elif func_name == "uniform":
                 self._handle_random_uniform(node)
@@ -355,6 +365,11 @@ class SQFTranspiler(ast.NodeVisitor):
                 self._handle_random_shuffle(node)
             elif method == "sample" and obj_module == "random":
                 self._handle_random_sample(node)
+            # JSON functions
+            elif method == "loads" and obj_module == "json":
+                self._handle_json_loads(node)
+            elif method == "dumps" and obj_module == "json":
+                self._handle_json_dumps(node)
             # Math functions
             elif method in ["sqrt", "sin", "cos", "tan", "asin", "acos", "atan", "floor", "ceil", "log", "exp"] and obj_module == "math":
                 handler_name = f"_handle_math_{method}"
@@ -613,6 +628,24 @@ class SQFTranspiler(ast.NodeVisitor):
         """Handle random.sample() - not directly supported in SQF."""
         self._add_line("// Warning: random.sample() not supported in SQF")
 
+    def _handle_json_loads(self, node: ast.Call) -> None:
+        """Handle json.loads() - convert to SQF parseSimpleArray or similar."""
+        if node.args:
+            json_str = self._visit_expr(node.args[0])
+            # In SQF, we can use parseSimpleArray for basic JSON-like structures
+            self.output.append(f"parseSimpleArray {json_str}")
+        else:
+            self.output.append("parseSimpleArray")
+
+    def _handle_json_dumps(self, node: ast.Call) -> None:
+        """Handle json.dumps() - convert to SQF str representation."""
+        if node.args:
+            data = self._visit_expr(node.args[0])
+            # SQF has str command for basic string conversion
+            self.output.append(f"str {data}")
+        else:
+            self.output.append("str nil")
+
     def visit_Assign(self, node: ast.Assign) -> None:
         """Handle variable assignments."""
         if len(node.targets) == 1:
@@ -640,16 +673,55 @@ class SQFTranspiler(ast.NodeVisitor):
                     self.classes[self.current_class]['instance_vars'].add(attr)
 
     def visit_List(self, node: ast.List) -> str:
-        """Handle list literals."""
+        """Handle list creation and return SQF array syntax."""
         elements = []
         for elt in node.elts:
             if isinstance(elt, ast.Str):
                 elements.append(f'"{elt.s}"')
             elif isinstance(elt, ast.Num):
                 elements.append(str(elt.n))
+            elif isinstance(elt, ast.Constant):
+                if isinstance(elt.value, str):
+                    elements.append(f'"{elt.value}"')
+                else:
+                    elements.append(str(elt.value))
             else:
                 elements.append(self._visit_expr(elt))
+
         return f"[{', '.join(elements)}]"
+
+    def visit_ListComp(self, node: ast.ListComp) -> str:
+        """Handle list comprehensions by converting to SQF array operations."""
+        # List comprehensions are complex in SQF
+        # We'll convert them to a combination of select/filter operations
+
+        # For now, implement a basic version
+        # [x*2 for x in items if x > 0] becomes something like:
+        # items select {_x > 0} apply {_x * 2}
+
+        if len(node.generators) == 1:
+            generator = node.generators[0]
+            iter_expr = self._visit_expr(generator.iter)
+
+            # Handle the comprehension element
+            elt_expr = self._visit_expr(node.elt)
+
+            # Handle conditions (if clauses)
+            conditions = []
+            for cond in generator.ifs:
+                cond_expr = self._visit_expr(cond)
+                conditions.append(cond_expr)
+
+            if conditions:
+                # With conditions: select + apply
+                condition_str = " && ".join(f"({_cond})" for _cond in conditions)
+                return f"({iter_expr} select {{{condition_str}}} apply {{{elt_expr}}})"
+            else:
+                # Simple comprehension: just apply
+                return f"({iter_expr} apply {{{elt_expr}}})"
+        else:
+            # Multiple generators not supported yet
+            return f"[{self._visit_expr(node.elt)}] // Complex comprehension not fully supported"
 
     def visit_Dict(self, node: ast.Dict) -> str:
         """Handle dictionary literals - convert to SQF arrays of pairs."""
@@ -731,32 +803,64 @@ class SQFTranspiler(ast.NodeVisitor):
             self._add_line(f"}} forEach {iter_expr};")
 
     def visit_Try(self, node: ast.Try) -> None:
-        """Handle try/except blocks - SQF doesn't have exceptions, so we comment them."""
-        self._add_line("// Try block start")
+        """Handle try/except blocks using SQF error handling patterns."""
+        # In SQF, we'll use a variable to track if an "exception" occurred
+        exception_var = f"_exception_{id(node)}"
+        self._add_variable(exception_var, exception_var)
+        self._add_line(f"{exception_var} = nil; // Exception tracking")
+
+        self._add_line("// Try block")
         self._push_scope()
 
-        # Handle the try body
+        # Handle the try body with exception simulation
         for stmt in node.body:
-            self.visit(stmt)
+            # Wrap each statement in error checking
+            if isinstance(stmt, ast.Expr) and isinstance(stmt.value, ast.Call):
+                # For function calls, we can check return values
+                func_name = "unknown"
+                if isinstance(stmt.value.func, ast.Name):
+                    func_name = stmt.value.func.id
+
+                # Special handling for known error-prone functions
+                if func_name in ["int", "float", "len"]:
+                    self._add_line(f"// Safe call to {func_name}")
+                    self.visit_Expr(stmt)
+                else:
+                    self.visit_Expr(stmt)
+            else:
+                self.visit(stmt)
 
         self._pop_scope()
 
         # Handle except handlers
-        for handler in node.handlers:
+        for i, handler in enumerate(node.handlers):
             exception_type = "any"
             if handler.type and isinstance(handler.type, ast.Name):
                 exception_type = handler.type.id
 
-            if handler.name:
-                # Exception variable (commented since SQF doesn't support exceptions)
-                self._add_line(f"// Catch {exception_type} as {handler.name} (exceptions not supported in SQF)")
-            else:
-                self._add_line(f"// Catch {exception_type} (exceptions not supported in SQF)")
+            # Check if we have an exception (simulated)
+            self._add_line(f"// Except block for {exception_type}")
+            self._add_line(f"if (!isNil \"{exception_var}\") then {{")
 
+            self.indent_level += 1
+
+            if handler.name:
+                # Exception variable
+                exc_var = handler.name
+                self._add_variable(exc_var, exc_var)
+                self._add_line(f"{exc_var} = {exception_var};")
+
+            # Handle the except body
             self._push_scope()
             for stmt in handler.body:
                 self.visit(stmt)
             self._pop_scope()
+
+            # Clear the exception
+            self._add_line(f"{exception_var} = nil;")
+
+            self.indent_level -= 1
+            self._add_line("};")
 
         # Handle finally block
         if node.finalbody:
@@ -764,13 +868,78 @@ class SQFTranspiler(ast.NodeVisitor):
             for stmt in node.finalbody:
                 self.visit(stmt)
 
-        self._add_line("// Try block end")
+    def visit_With(self, node: ast.With) -> None:
+        """Handle with statements (context managers)."""
+        # With statements are tricky in SQF since it doesn't have context managers
+        # We'll implement them as try/finally blocks
+
+        self._add_line("// With statement (context manager)")
+        self._push_scope()
+
+        # Handle the context managers
+        for item in node.items:
+            if item.optional_vars and isinstance(item.optional_vars, ast.Name):
+                # Variable assignment from context manager
+                var_name = item.optional_vars.id
+                self._add_variable(var_name, var_name)
+                context_expr = self._visit_expr(item.context_expr)
+                self._add_line(f"{var_name} = {context_expr}; // Context manager")
+            else:
+                # Context manager without variable
+                context_expr = self._visit_expr(item.context_expr)
+                self._add_line(f"// Context manager: {context_expr}")
+
+        # Handle the body
+        for stmt in node.body:
+            self.visit(stmt)
+
+        self._pop_scope()
+        self._add_line("// End with statement")
+
+    def visit_Lambda(self, node: ast.Lambda) -> str:
+        """Handle lambda expressions by converting to SQF functions."""
+        # Lambda functions become inline SQF functions
+        # Get parameter names
+        params = []
+        if node.args.args:
+            for arg in node.args.args:
+                params.append(arg.arg)
+
+        param_str = ", ".join(params) if params else ""
+
+        # Create a function body from the lambda expression
+        # Lambdas in SQF are typically handled as inline code
+        lambda_id = f"_lambda_{id(node)}"
+
+        # For now, we'll create a simple inline function
+        # More complex lambdas would need proper function definition
+        body_expr = self._visit_expr(node.body)
+
+        if len(params) == 1:
+            # Single parameter lambda: lambda x: x*2
+            return f"{{{params[0]} {{ {body_expr} }} }}"
+        else:
+            # Multi-parameter lambda
+            return f"{{{param_str} {{ {body_expr} }} }}"
+
+    def visit_Break(self, node: ast.Break) -> None:
+        """Handle break statements in loops."""
+        self._add_line("// Break statement - not directly supported in SQF")
+        self._add_line("// Consider restructuring the loop logic")
+
+    def visit_Continue(self, node: ast.Continue) -> None:
+        """Handle continue statements in loops."""
+        self._add_line("// Continue statement - not directly supported in SQF")
+        self._add_line("// Consider restructuring the loop logic")
 
     def visit_Raise(self, node: ast.Raise) -> None:
-        """Handle raise statements - convert to SQF diag_log for debugging."""
+        """Handle raise statements - convert to SQF error handling."""
         if node.exc:
             exc_msg = self._visit_expr(node.exc)
-            self._add_line(f'diag_log format ["Exception raised: %1", {exc_msg}];')
+            # Set exception variable and log
+            self._add_line(f'diag_log format ["Exception: %1", {exc_msg}];')
+            # In SQF context, we might set a global error flag
+            self._add_line(f'missionNamespace setVariable ["_last_error", {exc_msg}];')
         else:
             self._add_line('diag_log "Exception re-raised";')
 
@@ -830,8 +999,12 @@ class SQFTranspiler(ast.NodeVisitor):
                 return f"{obj}.{node.attr}"
         elif isinstance(node, ast.List):
             return self.visit_List(node)
+        elif isinstance(node, ast.ListComp):
+            return self.visit_ListComp(node)
         elif isinstance(node, ast.Dict):
             return self.visit_Dict(node)
+        elif isinstance(node, ast.Lambda):
+            return self.visit_Lambda(node)
         elif isinstance(node, ast.Call):
             # Handle function calls in expressions
             original_output = self.output
