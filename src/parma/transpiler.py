@@ -15,6 +15,38 @@ class SQFTranspiler(ast.NodeVisitor):
         self.variables: Dict[str, str] = {}
         self.classes: Dict[str, Dict] = {}
         self.current_class: Optional[str] = None
+        self.scopes: List[Dict[str, str]] = []  # Stack of variable scopes
+
+    def _push_scope(self):
+        """Push a new variable scope"""
+        self.scopes.append({})
+
+    def _pop_scope(self):
+        """Pop the current variable scope"""
+        if self.scopes:
+            self.scopes.pop()
+
+    def _add_variable(self, name: str, sqf_name: Optional[str] = None):
+        """Add a variable to the current scope"""
+        if not self.scopes:
+            self._push_scope()
+        if sqf_name is None:
+            sqf_name = name
+        self.scopes[-1][name] = sqf_name
+
+    def _resolve_variable(self, name: str) -> str:
+        """Resolve a variable name to its SQF equivalent"""
+        # Check all scopes from innermost to outermost
+        for scope in reversed(self.scopes):
+            if name in scope:
+                return scope[name]
+        # Check global variables
+        if name in self.variables:
+            return self.variables[name]
+        # If not found, return the name as-is (might be a parameter or built-in)
+        # For debugging, let's add a comment to see what variables are not resolved
+        logger.debug(f"Unresolved variable: {name}")
+        return name
 
     def transpile(self, source_code: str) -> str:
         """Transpile Python AST to SQF."""
@@ -79,6 +111,11 @@ class SQFTranspiler(ast.NodeVisitor):
         func_name = node.name
         args = [arg.arg for arg in node.args.args]
 
+        # Push function scope and add parameters
+        self._push_scope()
+        for arg in args:
+            self._add_variable(arg)  # Parameters are available in function scope
+
         # Special handling for __init__
         if func_name == "__init__":
             func_name = "constructor"
@@ -98,6 +135,9 @@ class SQFTranspiler(ast.NodeVisitor):
         self.indent_level -= 1
         self._add_line("};")
         self._add_line("")
+
+        # Pop function scope
+        self._pop_scope()
 
     def visit_Return(self, node: ast.Return) -> None:
         """Handle return statements."""
@@ -328,8 +368,10 @@ class SQFTranspiler(ast.NodeVisitor):
                 var_name = target.id
                 value = self._visit_expr(node.value)
                 if value:  # Only assign if we have a value
+                    self._add_variable(var_name)  # Track the variable
                     self._add_line(f"{var_name} = {value};")
                 else:
+                    self._add_variable(var_name)
                     self._add_line(f"{var_name} = unknown;")
             elif isinstance(target, ast.Attribute):
                 # Handle self.attribute = value using MEMBER macro
@@ -402,12 +444,20 @@ class SQFTranspiler(ast.NodeVisitor):
 
     def visit_For(self, node: ast.For) -> None:
         """Handle for loops."""
+        loop_var = "_i"  # Default loop variable
+
+        # Add loop variable to scope
+        if isinstance(node.target, ast.Name):
+            loop_var = node.target.id
+            self._add_variable(loop_var, f"_{loop_var}")  # Use underscore prefix for SQF
+
         if isinstance(node.iter, ast.Call) and isinstance(node.iter.func, ast.Name) and node.iter.func.id == "range":
             # Handle for i in range(n)
             range_call = node.iter
             if range_call.args:
                 range_arg = self._visit_expr(range_call.args[0])
-                self._add_line(f"for \"_i\" from 0 to ({range_arg} - 1) do {{")
+                loop_var_sqf = self._resolve_variable(loop_var)
+                self._add_line(f"for \"{loop_var_sqf}\" from 0 to ({range_arg} - 1) do {{")
                 self.indent_level += 1
 
                 for stmt in node.body:
@@ -440,14 +490,9 @@ class SQFTranspiler(ast.NodeVisitor):
             # Handle dict['key'] style access
             if isinstance(node.slice.value, str):
                 key = node.slice.value
-                # For our unit structure, find the value by key
-                # Structure: [["type", value], ["position", value], ["side", value]]
-                if key == "position":
-                    return f"(({value} select 1) select 1)"
-                elif key == "type":
-                    return f"(({value} select 0) select 1)"
-                elif key == "side":
-                    return f"(({value} select 2) select 1)"
+                # For our data structures, we need to handle dictionary access
+                # In SQF, we can use the get command for associative arrays
+                return f"({value} get '{key}')"
         return f"({value} select 0)"  # Default fallback with proper parentheses
 
     def _visit_expr(self, node: ast.AST) -> str:
@@ -458,7 +503,7 @@ class SQFTranspiler(ast.NodeVisitor):
             right = self._visit_expr(node.comparators[0])
             return f"{left} {op} {right}"
         elif isinstance(node, ast.Name):
-            return node.id
+            return self._resolve_variable(node.id)
         elif isinstance(node, ast.Num):
             return str(node.n)
         elif isinstance(node, ast.Str):

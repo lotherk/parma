@@ -29,6 +29,35 @@ class SQFValidator:
             'private', 'public', 'CLASS', 'ENDCLASS', 'MEMBER', 'call'
         }
 
+        # Load comprehensive SQF command database
+        self.sqf_commands = self._load_command_database()
+
+    def _load_command_database(self):
+        """Load SQF command database from JSON file"""
+        import json
+        import os
+
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        db_path = os.path.join(script_dir, "sqf_commands.json")
+
+        try:
+            with open(db_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            return set(data["commands"])
+        except (FileNotFoundError, KeyError):
+            # Fallback to basic command set if database not available
+            return {
+                'diag_log', 'createVehicle', 'setPos', 'deleteVehicle', 'setPosASL',
+                'setPosATL', 'setDamage', 'setFuel', 'alive', 'side', 'position',
+                'direction', 'velocity', 'speed', 'damage', 'fuel', 'ammo'
+            }
+
+        # SQF keywords that should be recognized
+        self.sqf_keywords = {
+            'if', 'then', 'else', 'for', 'from', 'to', 'do', 'while',
+            'private', 'public', 'CLASS', 'ENDCLASS', 'MEMBER', 'call'
+        }
+
         # Common SQF commands
         self.sqf_commands = {
             'diag_log', 'format', 'count', 'select', 'pushBack', 'createVehicle',

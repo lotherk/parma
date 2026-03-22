@@ -92,7 +92,7 @@ ENDCLASS;
 mission = ["new"] call BasicMission;
 MEMBER("initialize_mission",nil)
 ;
-for "_i" from 0 to (0 - 1) do {
+for "_time" from 0 to (0 - 1) do {
 MEMBER("update_mission",[time])
     ;
 };
