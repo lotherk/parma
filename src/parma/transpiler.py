@@ -25,6 +25,16 @@ class SQFTranspiler(ast.NodeVisitor):
         # Performance optimizations
         self._expr_cache: Dict[str, str] = {}  # Cache for expression results
         self._var_cache: Dict[str, str] = {}  # Cache for variable resolutions
+        # Profiling and statistics
+        self.stats = {
+            'start_time': None,
+            'end_time': None,
+            'lines_processed': 0,
+            'functions_processed': 0,
+            'classes_processed': 0,
+            'expressions_processed': 0,
+            'errors_found': 0
+        }
 
     def _add_error(self, message: str, node: Optional[ast.AST] = None):
         """Add an error with line number context."""
@@ -110,14 +120,46 @@ class SQFTranspiler(ast.NodeVisitor):
 
     def transpile(self, source_code: str) -> str:
         """Transpile Python AST to SQF."""
+        import time
+        start_time = time.time()
+
         try:
             tree = ast.parse(source_code, mode='exec')
             self.source_lines = source_code.splitlines()
+            self.stats['lines_processed'] = len(self.source_lines)
+            self.stats['start_time'] = start_time
+
             self.visit(tree)
+
+            end_time = time.time()
+            self.stats['end_time'] = end_time
+            self.stats['errors_found'] = len(self.errors)
+
             return self._format_output()
         except SyntaxError as e:
             line_info = f" at line {e.lineno}: {self.source_lines[e.lineno-1].strip()}" if e.lineno else ""
             raise ValueError(f"Invalid Python syntax{line_info}: {e}")
+
+    def get_statistics(self) -> Dict[str, Any]:
+        """Get transpilation statistics."""
+        if self.stats['start_time'] and self.stats['end_time']:
+            duration = self.stats['end_time'] - self.stats['start_time']
+            self.stats['duration_seconds'] = duration
+            self.stats['lines_per_second'] = self.stats['lines_processed'] / duration if duration > 0 else 0
+
+        return self.stats.copy()
+
+    def reset_statistics(self):
+        """Reset statistics for new transpilation."""
+        self.stats = {
+            'start_time': None,
+            'end_time': None,
+            'lines_processed': 0,
+            'functions_processed': 0,
+            'classes_processed': 0,
+            'expressions_processed': 0,
+            'errors_found': 0
+        }
 
     def _format_output(self) -> str:
         """Format the generated SQF code with optimized string building."""
@@ -173,6 +215,7 @@ class SQFTranspiler(ast.NodeVisitor):
             'bases': [base.id if isinstance(base, ast.Name) else str(base) for base in node.bases],
             'instance_vars': set()
         }
+        self.stats['classes_processed'] += 1
 
         # Process class body
         self.current_class = class_name
@@ -188,25 +231,73 @@ class SQFTranspiler(ast.NodeVisitor):
         func_name = node.name
         args = [arg.arg for arg in node.args.args]
 
-        # Track function parameters
+        # Track function parameters and statistics
         self.function_params[func_name] = args
         self.current_function = func_name
+        self.stats['functions_processed'] += 1
 
         # Push function scope and add parameters
         self._push_scope()
         for arg in args:
             self._add_variable(arg)  # Parameters are available in function scope
 
-        # Special handling for __init__
-        if func_name == "__init__":
-            func_name = "constructor"
-            # Assume public for now
-            self._add_line(f'PUBLIC FUNCTION("array","{func_name}") {{')
-        else:
-            # Assume public for now - could be enhanced to detect private methods
-            return_type = "any"  # Could be enhanced to infer types
-            self._add_line(f'PUBLIC FUNCTION("{return_type}","{func_name}") {{')
+        # Handle decorators
+        decorators = []
+        static_method = False
+        class_method = False
+        property_decorator = False
 
+        for decorator in node.decorator_list:
+            if isinstance(decorator, ast.Name):
+                decorator_name = decorator.id
+                decorators.append(decorator_name)
+
+                # Special handling for common decorators
+                if decorator_name == "staticmethod":
+                    static_method = True
+                elif decorator_name == "classmethod":
+                    class_method = True
+                elif decorator_name == "property":
+                    property_decorator = True
+
+            elif isinstance(decorator, ast.Attribute):
+                decorator_name = f"{decorator.value.id}.{decorator.attr}"
+                decorators.append(decorator_name)
+
+        # Generate function signature with decorator awareness
+        if static_method:
+            # Static methods don't get self/cls parameter
+            pass
+        elif class_method:
+            # Class methods get class as first parameter
+            pass
+        elif property_decorator:
+            # Properties are special - they become getter methods
+            pass
+
+        args_str = ", ".join(f'"{arg}"' for arg in args)
+
+        # Build the full function signature for PUBLIC FUNCTION macro
+        if self.current_class:
+            # Class method: PUBLIC FUNCTION("return_type","ClassName_functionName")
+            full_func_name = f'"{self.current_class}_{func_name}"'
+        else:
+            # Global function: PUBLIC FUNCTION("return_type","functionName")
+            full_func_name = f'"{func_name}"'
+
+        signature = f'"any",{full_func_name}'
+
+        # Add decorator comments and special handling
+        if decorators:
+            self._add_line(f"// Decorators: {', '.join(decorators)}")
+            if static_method:
+                self._add_line("// Static method - no 'this' context")
+            elif class_method:
+                self._add_line("// Class method - 'this' refers to class")
+            elif property_decorator:
+                self._add_line("// Property getter method")
+
+        self._add_line(f"PUBLIC FUNCTION({signature}) {{")
         self.indent_level += 1
 
         # Process function body
@@ -1301,12 +1392,14 @@ class SQFTranspiler(ast.NodeVisitor):
     def visit_Subscript(self, node: ast.Subscript) -> str:
         """Handle subscript access like dict[key] or list[index] with proper SQF syntax."""
         value = self._visit_expr(node.value)
+
         if isinstance(node.slice, ast.Index):
             # list[index] or dict[key] - use select command
             index_expr = getattr(node.slice, 'value', None)
             if index_expr:
                 index = self._visit_expr(index_expr)
                 return f"({value} select {index})"
+
         elif isinstance(node.slice, ast.Constant):
             # Handle dict['key'] style access
             if isinstance(node.slice.value, str):
@@ -1314,10 +1407,52 @@ class SQFTranspiler(ast.NodeVisitor):
                 # For our data structures, we need to handle dictionary access
                 # In SQF, we can use the get command for associative arrays
                 return f"({value} get '{key}')"
+            else:
+                # Numeric constant index
+                return f"({value} select {node.slice.value})"
+
+        elif isinstance(node.slice, ast.Name):
+            # Variable index like arr[var]
+            index = self._resolve_variable(node.slice.id)
+            return f"({value} select {index})"
+
+        elif isinstance(node.slice, ast.Slice):
+            # list[start:stop:step] - advanced slicing
+            start = stop = step = None
+
+            if node.slice.lower:
+                start = self._visit_expr(node.slice.lower)
+            if node.slice.upper:
+                stop = self._visit_expr(node.slice.upper)
+            if node.slice.step:
+                step = self._visit_expr(node.slice.step)
+
+            # Generate SQF slice operation
+            slice_params = []
+            if start is not None:
+                slice_params.append(start)
+            else:
+                slice_params.append("nil")
+
+            if stop is not None:
+                slice_params.append(stop)
+            else:
+                slice_params.append("nil")
+
+            if step is not None:
+                slice_params.append(step)
+            else:
+                slice_params.append("nil")
+
+            params_str = ", ".join(slice_params)
+            return f"({value} select [{params_str}]) // Array slice"
+
         return f"({value} select 0)"  # Default fallback with proper parentheses
 
     def _visit_expr(self, node: ast.AST) -> str:
         """Visit an expression and return its string representation."""
+        self.stats['expressions_processed'] += 1
+
         if isinstance(node, ast.Compare):
             left = self._visit_expr(node.left)
             op = self._cmp_op_to_sqf(node.ops[0])

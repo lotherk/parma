@@ -6,21 +6,21 @@
 // Warning: Import of 'json' not supported in SQF
 // Imported typing.List as List (type hints ignored)
 PUBLIC FUNCTION("any","test_try_except") {
-    _exception_139741637903696 = nil; // Exception tracking
+    _exception_140262696781712 = nil; // Exception tracking
     // Try block
     result = (10 / 2);
     result
     // Except block for ZeroDivisionError
-    if (!isNil "_exception_139741637903696") then {
-        e = _exception_139741637903696;
+    if (!isNil "_exception_140262696781712") then {
+        e = _exception_140262696781712;
         "error"
-        _exception_139741637903696 = nil;
+        _exception_140262696781712 = nil;
     };
     // Except block for Exception
-    if (!isNil "_exception_139741637903696") then {
-        e = _exception_139741637903696;
+    if (!isNil "_exception_140262696781712") then {
+        e = _exception_140262696781712;
         "unknown error"
-        _exception_139741637903696 = nil;
+        _exception_140262696781712 = nil;
     };
     // Finally block
 diag_log "cleanup";
@@ -52,14 +52,14 @@ PUBLIC FUNCTION("any","test_with_statement") {
 PUBLIC FUNCTION("any","test_json_operations") {
     data = [["name", "test"], ["value", 42], ["items", [1, 2, 3]]];
     json_str = str data;
-    _exception_139741637921808 = nil; // Exception tracking
+    _exception_140262696802000 = nil; // Exception tracking
     // Try block
     parsed = parseSimpleArray json_str;
     parsed
     // Except block for any
-    if (!isNil "_exception_139741637921808") then {
+    if (!isNil "_exception_140262696802000") then {
         [["error", "json parsing not available in SQF"]]
-        _exception_139741637921808 = nil;
+        _exception_140262696802000 = nil;
     };
 };
 

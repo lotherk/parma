@@ -3,8 +3,9 @@
  */
 #include "macros/oop.h"
 
+// Imported random as random
 CLASS("LootSystem")
-PUBLIC FUNCTION("array","constructor") {
+PUBLIC FUNCTION("self") {
     MEMBER("garage_classes",["Land_Garage_V1_F", "Land_Garage_V2_F", "Land_i_Garage_V1_F", "Land_i_Garage_V2_F", "Land_Garage_Row_F", "Land_GarageOffice_01_F"]);
     MEMBER("weapon_classes",["arifle_MX_F", "arifle_MX_SW_F", "arifle_MXC_F", "srifle_EBR_F", "LMG_Mk200_F", "hgun_P07_F", "hgun_ACPC2_F", "launch_RPG32_F", "arifle_TRG21_F", "arifle_Katiba_F"]);
     MEMBER("magazine_classes",["30Rnd_65x39_caseless_mag", "100Rnd_65x39_caseless_mag", "20Rnd_556x45_UW_mag", "30Rnd_556x45_Stanag", "16Rnd_9x21_Mag", "9Rnd_45ACP_Mag", "RPG32_F", "1Rnd_HE_Grenade_shell", "HandGrenade", "SmokeShell"]);
@@ -12,54 +13,54 @@ PUBLIC FUNCTION("array","constructor") {
     MEMBER("found_buildings",[]);
 };
 
-PUBLIC FUNCTION("any","find_buildings") {
+PUBLIC FUNCTION("self", "center_position", "radius") {
     MEMBER("found_buildings",[[["position", [(unknown + 50), (unknown + 25), 0]], ["class", "Land_Garage_V1_F"]], [["position", [(unknown - 30), (unknown + 40), 0]], ["class", "Land_Garage_V2_F"]], [["position", [(unknown + 80), (unknown - 15), 0]], ["class", "Land_i_Garage_V1_F"]]]);
     MEMBER("found_buildings",nil)
 };
 
-PUBLIC FUNCTION("any","generate_loot_for_building") {
+PUBLIC FUNCTION("self", "building") {
     loot = [];
-    for "_i" from 0 to (2 - 1) do {
+    for "__" from 0 to (2 - 1) do {
         weapon = MEMBER("weapon_classes",nil) select (floor random count MEMBER("weapon_classes",nil));
         magazine = MEMBER("magazine_classes",nil) select (floor random count MEMBER("magazine_classes",nil));
-loot pushBack [["type", "weapon"], ["class", weapon], ["magazine", magazine]]
+loot pushBack [["type", "weapon"], ["class", weapon], ["magazine", magazine]];
         ;
     };
-    for "_i" from 0 to (3 - 1) do {
+    for "__" from 0 to (3 - 1) do {
         weapon = MEMBER("weapon_classes",nil) select (floor random count MEMBER("weapon_classes",nil));
         magazine = MEMBER("magazine_classes",nil) select (floor random count MEMBER("magazine_classes",nil));
-loot pushBack [["type", "rifle"], ["class", weapon], ["magazine", magazine]]
+loot pushBack [["type", "rifle"], ["class", weapon], ["magazine", magazine]];
         ;
     };
-    ammo_count = MEMBER("randint",[5, 10]);
-    for "_i" from 0 to (ammo_count - 1) do {
+    ammo_count = (5 + floor random (10 - 5 + 1));
+    for "__" from 0 to (ammo_count - 1) do {
         magazine = MEMBER("magazine_classes",nil) select (floor random count MEMBER("magazine_classes",nil));
-loot pushBack [["type", "magazine"], ["class", magazine]]
+loot pushBack [["type", "magazine"], ["class", magazine]];
         ;
     };
-    item_count = MEMBER("randint",[3, 8]);
-    for "_i" from 0 to (item_count - 1) do {
+    item_count = (3 + floor random (8 - 3 + 1));
+    for "__" from 0 to (item_count - 1) do {
         item = MEMBER("item_classes",nil) select (floor random count MEMBER("item_classes",nil));
-loot pushBack [["type", "item"], ["class", item]]
+loot pushBack [["type", "item"], ["class", item]];
         ;
     };
     loot
 };
 
-PUBLIC FUNCTION("any","populate_building") {
+PUBLIC FUNCTION("self", "building", "loot") {
     building_pos = unknown;
     { // for loop
         offset_x = unknown + (random (3 - unknown));
         offset_y = unknown + (random (3 - unknown));
         item_pos = [(unknown + offset_x), (unknown + offset_y), (unknown + 0.1)];
         if (unknown == "weapon") then {
-            weapon_holder = unknown;
+            weapon_holder = "weapon_holder_" + str((1000 + floor random (9999 - 1000 + 1)));
         } else {
             if (unknown == "magazine") then {
-                mag_box = unknown;
+                mag_box = "magazine_box_" + str((1000 + floor random (9999 - 1000 + 1)));
             } else {
                 if (unknown == "item") then {
-                    item_box = unknown;
+                    item_box = "item_box_" + str((1000 + floor random (9999 - 1000 + 1)));
                 };
             };
         };
@@ -68,17 +69,17 @@ diag_log "Placed " + str(unknown) + ": " + str(unknown) + " at " + str(item_pos)
     } forEach loot;
 };
 
-PUBLIC FUNCTION("any","initialize_loot_system") {
+PUBLIC FUNCTION("self", "mission_center", "search_radius") {
 diag_log "Initializing Loot Population System...";
     ;
     buildings = MEMBER("find_buildings",[mission_center, search_radius]);
-diag_log "Found " + str(count buildings) + " buildings to populate with loot";
+diag_log "Found " + str((count buildings)) + " buildings to populate with loot";
     ;
     { // for loop
 diag_log "Populating building: " + str(unknown) + " at " + str(unknown);
         ;
         loot = MEMBER("generate_loot_for_building",[building]);
-diag_log "Generated " + str(count loot) + " loot items";
+diag_log "Generated " + str((count loot)) + " loot items";
         ;
 MEMBER("populate_building",[building, loot])
         ;
@@ -89,8 +90,8 @@ diag_log "Loot population system initialized successfully!";
     ;
 };
 
-PUBLIC FUNCTION("any","get_loot_statistics") {
-    total_buildings = count MEMBER("found_buildings",nil);
+PUBLIC FUNCTION("self") {
+    total_buildings = (count MEMBER("found_buildings",nil));
     [["buildings_populated", total_buildings], ["buildings_found", total_buildings]]
 };
 

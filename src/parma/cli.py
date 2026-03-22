@@ -93,7 +93,9 @@ def cli():
 @click.option('-o', '--output', type=click.Path(), help='Output SQF file path')
 @click.option('--verbose', is_flag=True, help='Enable verbose output')
 @click.option('--test', is_flag=True, help='Test generated SQF with SQFVM')
-def compile(input_file, output, verbose, test):
+@click.option('--profile', is_flag=True, help='Show transpilation performance statistics')
+@click.option('--stats', is_flag=True, help='Show detailed transpilation statistics')
+def compile(input_file, output, verbose, test, profile, stats):
     """Compile Python file to SQF."""
     try:
         # Read input file
@@ -108,7 +110,10 @@ def compile(input_file, output, verbose, test):
         if verbose:
             click.echo("Transpiling Python to SQF...")
 
-        sqf_code = transpile_python_to_sqf(python_code)
+        # Create transpiler instance for statistics
+        from parma.transpiler import SQFTranspiler
+        transpiler = SQFTranspiler()
+        sqf_code = transpiler.transpile(python_code)
 
         # Determine output path
         if output:
@@ -124,6 +129,21 @@ def compile(input_file, output, verbose, test):
 
         if verbose:
             click.echo(f"Output size: {len(sqf_code)} characters")
+
+        # Show statistics if requested
+        if stats or profile:
+            statistics = transpiler.get_statistics()
+            click.echo(f"\n{Fore.CYAN}📊 Transpilation Statistics:")
+            click.echo(f"  Lines processed: {statistics['lines_processed']}")
+            click.echo(f"  Functions processed: {statistics['functions_processed']}")
+            click.echo(f"  Classes processed: {statistics['classes_processed']}")
+            click.echo(f"  Errors found: {statistics['errors_found']}")
+
+            if profile and 'duration_seconds' in statistics:
+                duration = statistics['duration_seconds']
+                lines_per_sec = statistics['lines_per_second']
+                click.echo(f"  Duration: {duration:.3f} seconds")
+                click.echo(f"  Performance: {lines_per_sec:.1f} lines/second")
 
         # Test with SQFVM if requested
         if test:
