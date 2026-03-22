@@ -49,6 +49,18 @@ pip install -e .
 pip install parma
 ```
 
+### Using Docker
+
+For isolated builds without affecting your system:
+
+```bash
+# Simple build (Python transpiler only)
+./build-docker.sh simple
+
+# Cross-compilation build (includes Windows DLL, experimental)
+./build-docker.sh cross
+```
+
 ## Usage
 
 ### Basic Compilation
@@ -589,11 +601,47 @@ black src/
 ### Building
 
 ```bash
-# Build package
+# Build Python package
 python -m build
 
 # Install locally
 pip install dist/parma-*.whl
+```
+
+#### Building ParmaExtension DLL
+
+The ParmaExtension DLL allows ArmA to execute Python code at runtime.
+
+**Cross-compilation on Linux:**
+```bash
+# Install MinGW
+sudo apt install mingw-w64 cmake
+
+# Build for Windows 64-bit
+cd dll
+mkdir build && cd build
+cmake .. -DCMAKE_TOOLCHAIN_FILE=../Toolchain-mingw64.cmake
+make
+
+# Build for Windows 32-bit
+cd ..
+mkdir build32 && cd build32
+cmake .. -DCMAKE_TOOLCHAIN_FILE=../Toolchain-mingw32.cmake
+make
+```
+
+**Native Windows build:**
+```bash
+# Using Visual Studio
+cd dll
+mkdir build && cd build
+cmake .. -G "Visual Studio 16 2019"
+cmake --build . --config Release
+```
+
+**Using Docker (recommended):**
+```bash
+./build-docker.sh cross
 ```
 
 ## Docker Usage

@@ -1,0 +1,29 @@
+# Simplified Dockerfile for Parma (without DLL cross-compilation)
+FROM python:3.11-slim
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy Python project files
+COPY pyproject.toml ./
+COPY src/ ./src/
+COPY README.md ./
+COPY CONTRIBUTING.md ./
+
+# Install Python package
+RUN pip install --upgrade pip && pip install -e .
+
+# Copy everything else
+COPY . .
+
+# Create workspace
+RUN mkdir /workspace
+WORKDIR /workspace
+
+# Default command
+CMD ["parma", "--help"]

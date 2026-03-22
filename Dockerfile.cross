@@ -1,0 +1,100 @@
+# Multi-stage Dockerfile for building Parma and its components
+# Stage 1: Cross-compilation environment for Windows DLL
+FROM debian:bookworm-slim AS dll-builder
+
+# Install cross-compilation tools
+RUN apt-get update && apt-get install -y \
+    mingw-w64 \
+    cmake \
+    make \
+    wget \
+    unzip \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+
+# Download pre-built Python for Windows and extract headers/libs
+RUN wget https://www.python.org/ftp/python/3.11.8/python-3.11.8-embed-amd64.zip && \
+    unzip python-3.11.8-embed-amd64.zip -d python64 && \
+    wget https://www.python.org/ftp/python/3.11.8/python-3.11.8-embed-win32.zip && \
+    unzip python-3.11.8-embed-win32.zip -d python32
+
+# Also download development headers
+RUN wget https://www.python.org/ftp/python/3.11.8/Python-3.11.8.tar.xz && \
+    tar -xf Python-3.11.8.tar.xz && \
+    cp -r Python-3.11.8/Include/* python64/include/ && \
+    cp -r Python-3.11.8/Include/* python32/include/
+
+# Copy DLL source
+COPY dll/ ./dll/
+
+# Update toolchain files with correct paths
+RUN sed -i "s|/usr/x86_64-w64-mingw32/include/python3.11|/build/python64/include|g" dll/Toolchain-mingw64.cmake && \
+    sed -i "s|/usr/x86_64-w64-mingw32/lib/libpython3.11.dll.a|/build/python64/python311.dll|g" dll/Toolchain-mingw64.cmake && \
+    sed -i "s|/usr/i686-w64-mingw32/include/python3.11|/build/python32/include|g" dll/Toolchain-mingw32.cmake && \
+    sed -i "s|/usr/i686-w64-mingw32/lib/libpython3.11.dll.a|/build/python32/python311.dll|g" dll/Toolchain-mingw32.cmake
+
+# Build for Windows (64-bit)
+RUN cd dll && \
+    mkdir -p build && \
+    cd build && \
+    cmake .. -DCMAKE_TOOLCHAIN_FILE=../Toolchain-mingw64.cmake && \
+    make
+
+# Build for Windows (32-bit)
+RUN cd dll && \
+    mkdir -p build32 && \
+    cd build32 && \
+    cmake .. -DCMAKE_TOOLCHAIN_FILE=../Toolchain-mingw32.cmake && \
+    make
+
+# Stage 2: Python environment for Parma
+FROM python:3.11-slim AS parma-builder
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy Python project files
+COPY pyproject.toml ./
+COPY src/ ./src/
+COPY README.md ./
+COPY CONTRIBUTING.md ./
+
+# Install Python package
+RUN pip install --upgrade pip && pip install -e .
+
+# Copy and run tests
+COPY tests/ ./tests/
+RUN python -m pytest tests/ -v
+
+# Stage 3: Final runtime image
+FROM python:3.11-slim
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy built DLLs from dll-builder
+COPY --from=dll-builder /build/dll/build/ParmaExtension.dll /app/dll/
+COPY --from=dll-builder /build/dll/build32/ParmaExtension.dll /app/dll/ParmaExtension32.dll
+
+# Copy Parma from parma-builder
+COPY --from=parma-builder /usr/local/lib/python3.11/site-packages/ /usr/local/lib/python3.11/site-packages/
+COPY --from=parma-builder /usr/local/bin/parma /usr/local/bin/parma
+
+# Copy project files
+COPY . /app/
+WORKDIR /app
+
+# Create workspace directory
+RUN mkdir /workspace
+WORKDIR /workspace
+
+# Default command
+CMD ["parma", "--help"]
