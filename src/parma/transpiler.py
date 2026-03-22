@@ -25,6 +25,9 @@ class SQFTranspiler(ast.NodeVisitor):
         # Performance optimizations
         self._expr_cache: Dict[str, str] = {}  # Cache for expression results
         self._var_cache: Dict[str, str] = {}  # Cache for variable resolutions
+        # Source mapping for debugging
+        self.source_map: Dict[int, Dict] = {}  # SQF line -> Python source info
+        self.sqf_line_counter: int = 0  # Track SQF output lines
         # Profiling and statistics
         self.stats = {
             'start_time': None,
@@ -36,8 +39,8 @@ class SQFTranspiler(ast.NodeVisitor):
             'errors_found': 0
         }
 
-    def _add_error(self, message: str, node: Optional[ast.AST] = None):
-        """Add an error with line number context."""
+    def _add_error(self, message: str, node: Optional[ast.AST] = None, suggestions: Optional[List[str]] = None):
+        """Add an error with line number context and suggestions."""
         if node and hasattr(node, 'lineno') and node.lineno:
             line_num = node.lineno
             if 0 < line_num <= len(self.source_lines):
@@ -47,7 +50,67 @@ class SQFTranspiler(ast.NodeVisitor):
                 error_msg = f"Line {line_num}: {message}"
         else:
             error_msg = message
+
+        if suggestions:
+            error_msg += "\n    Suggestions:"
+            for suggestion in suggestions:
+                error_msg += f"\n      • {suggestion}"
+
         self.errors.append(error_msg)
+
+    def _suggest_alternative(self, feature: str) -> List[str]:
+        """Suggest alternatives for unsupported features."""
+        suggestions = {
+            "async": [
+                "Use synchronous functions instead",
+                "Implement state machines for complex async logic",
+                "Use SQF's spawn command for background tasks"
+            ],
+            "metaclass": [
+                "Use regular class decorators",
+                "Implement class modifications in __init_subclass__",
+                "Use factory functions for dynamic class creation"
+            ],
+            "multiple inheritance": [
+                "Use composition over inheritance",
+                "Implement mixin classes as separate includes",
+                "Use interface-like patterns with duck typing"
+            ],
+            "generators": [
+                "Use lists or arrays instead",
+                "Implement lazy evaluation manually",
+                "Use functions that return collections"
+            ]
+        }
+        return suggestions.get(feature, ["Check Parma documentation for alternatives"])
+
+    def generic_visit(self, node):
+        """Handle unsupported AST nodes gracefully."""
+        node_type = type(node).__name__
+
+        # Some nodes we can safely ignore
+        ignorable_nodes = {
+            'Import', 'ImportFrom', 'Expr', 'Pass', 'Break', 'Continue',
+            'Global', 'Nonlocal', 'AnnAssign', 'AugAssign'
+        }
+
+        if node_type in ignorable_nodes:
+            super().generic_visit(node)
+            return
+
+        # For unsupported nodes, add an error with suggestions
+        suggestions = self._suggest_alternative(node_type.lower())
+        self._add_error(
+            f"'{node_type}' syntax is not supported in SQF transpilation",
+            node,
+            suggestions
+        )
+
+        # Add a comment in the output
+        self._add_line(f"// Unsupported: {node_type} - {suggestions[0] if suggestions else 'Check documentation'}")
+
+        # Still visit children to catch nested issues
+        super().generic_visit(node)
 
     def get_errors(self) -> List[str]:
         """Get all errors found during transpilation."""
@@ -147,7 +210,19 @@ class SQFTranspiler(ast.NodeVisitor):
             self.stats['duration_seconds'] = duration
             self.stats['lines_per_second'] = self.stats['lines_processed'] / duration if duration > 0 else 0
 
+        # Add source mapping statistics
+        self.stats['source_map_entries'] = len(self.source_map)
+        self.stats['sqf_lines_generated'] = self.sqf_line_counter
+
         return self.stats.copy()
+
+    def get_source_map(self) -> Dict[int, Dict]:
+        """Get the source map for debugging."""
+        return self.source_map.copy()
+
+    def debug_sqf_line(self, sqf_line_number: int) -> Optional[Dict]:
+        """Get debug information for a specific SQF line number."""
+        return self.source_map.get(sqf_line_number)
 
     def reset_statistics(self):
         """Reset statistics for new transpilation."""
@@ -193,9 +268,21 @@ class SQFTranspiler(ast.NodeVisitor):
         """Get current indentation."""
         return "    " * self.indent_level
 
-    def _add_line(self, line: str):
-        """Add a line to output with proper indentation."""
-        self.output.append(f"{self._indent()}{line}")
+    def _add_line(self, line: str, source_node: Optional[ast.AST] = None):
+        """Add a line to output with proper indentation and source mapping."""
+        indented_line = f"{self._indent()}{line}"
+        self.output.append(indented_line)
+
+        # Track source mapping for debugging
+        if source_node and hasattr(source_node, 'lineno'):
+            self.source_map[self.sqf_line_counter] = {
+                'python_line': source_node.lineno,
+                'python_col': getattr(source_node, 'col_offset', 0),
+                'source_type': type(source_node).__name__,
+                'sqf_line': indented_line.strip()
+            }
+
+        self.sqf_line_counter += 1
 
     def visit_ClassDef(self, node: ast.ClassDef) -> None:
         """Handle class definitions using OOP macros."""
@@ -1331,6 +1418,41 @@ class SQFTranspiler(ast.NodeVisitor):
 
         self._pop_scope()
         self._add_line("// End with statement")
+
+    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+        """Handle async function definitions."""
+        # Async functions are not natively supported in SQF
+        # We'll implement them as regular functions with async comments
+        func_name = node.name
+
+        # Add async comment
+        self._add_line(f"// Async function: {func_name} (async not supported in SQF)")
+        self._add_line("// Async operations will be converted to synchronous calls")
+
+        # Create a regular function definition from the async one
+        # Copy all attributes except the async-specific ones
+        regular_node = ast.FunctionDef(
+            name=node.name,
+            args=node.args,
+            body=node.body,
+            decorator_list=node.decorator_list,
+            returns=node.returns,
+            type_comment=node.type_comment
+        )
+
+        # Copy source location info
+        for attr in ['lineno', 'end_lineno', 'col_offset', 'end_col_offset']:
+            if hasattr(node, attr):
+                setattr(regular_node, attr, getattr(node, attr))
+
+        self.visit_FunctionDef(regular_node)
+
+    def visit_Await(self, node: ast.Await) -> str:
+        """Handle await expressions."""
+        # Await is not supported in SQF, convert to synchronous call
+        value = self._visit_expr(node.value)
+        self._add_line(f"// Await expression: {value} (converted to sync)")
+        return value
 
     def visit_Lambda(self, node: ast.Lambda) -> str:
         """Handle lambda expressions by converting to SQF functions."""

@@ -95,7 +95,9 @@ def cli():
 @click.option('--test', is_flag=True, help='Test generated SQF with SQFVM')
 @click.option('--profile', is_flag=True, help='Show transpilation performance statistics')
 @click.option('--stats', is_flag=True, help='Show detailed transpilation statistics')
-def compile(input_file, output, verbose, test, profile, stats):
+@click.option('--debug-map', type=click.Path(), help='Output source map for debugging')
+@click.option('--errors-only', is_flag=True, help='Only show errors and warnings')
+def compile(input_file, output, verbose, test, profile, stats, debug_map, errors_only):
     """Compile Python file to SQF."""
     try:
         # Read input file
@@ -115,6 +117,21 @@ def compile(input_file, output, verbose, test, profile, stats):
         transpiler = SQFTranspiler()
         sqf_code = transpiler.transpile(python_code)
 
+        # Handle debug map output
+        if debug_map:
+            import json
+            source_map = transpiler.get_source_map()
+            with open(debug_map, 'w') as f:
+                json.dump(source_map, f, indent=2)
+            if not errors_only:
+                click.echo(f"Debug map saved to {debug_map}")
+
+        # Show errors if any
+        errors = transpiler.errors
+        if errors:
+            for error in errors:
+                click.echo(f"{Fore.YELLOW}⚠ {error}", err=True)
+
         # Determine output path
         if output:
             output_path = Path(output)
@@ -125,25 +142,28 @@ def compile(input_file, output, verbose, test, profile, stats):
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(sqf_code)
 
-        click.echo(f"{Fore.GREEN}✓ Compiled {input_file} → {output_path}")
+        if not errors_only:
+            click.echo(f"{Fore.GREEN}✓ Compiled {input_file} → {output_path}")
 
-        if verbose:
-            click.echo(f"Output size: {len(sqf_code)} characters")
+            if verbose:
+                click.echo(f"Output size: {len(sqf_code)} characters")
 
-        # Show statistics if requested
-        if stats or profile:
-            statistics = transpiler.get_statistics()
-            click.echo(f"\n{Fore.CYAN}📊 Transpilation Statistics:")
-            click.echo(f"  Lines processed: {statistics['lines_processed']}")
-            click.echo(f"  Functions processed: {statistics['functions_processed']}")
-            click.echo(f"  Classes processed: {statistics['classes_processed']}")
-            click.echo(f"  Errors found: {statistics['errors_found']}")
+            # Show statistics if requested
+            if stats or profile:
+                statistics = transpiler.get_statistics()
+                click.echo(f"\n{Fore.CYAN}📊 Transpilation Statistics:")
+                click.echo(f"  Lines processed: {statistics['lines_processed']}")
+                click.echo(f"  Functions processed: {statistics['functions_processed']}")
+                click.echo(f"  Classes processed: {statistics['classes_processed']}")
+                click.echo(f"  SQF lines generated: {statistics['sqf_lines_generated']}")
+                click.echo(f"  Source map entries: {statistics['source_map_entries']}")
+                click.echo(f"  Errors found: {statistics['errors_found']}")
 
-            if profile and 'duration_seconds' in statistics:
-                duration = statistics['duration_seconds']
-                lines_per_sec = statistics['lines_per_second']
-                click.echo(f"  Duration: {duration:.3f} seconds")
-                click.echo(f"  Performance: {lines_per_sec:.1f} lines/second")
+                if profile and 'duration_seconds' in statistics:
+                    duration = statistics['duration_seconds']
+                    lines_per_sec = statistics['lines_per_second']
+                    click.echo(f"  Duration: {duration:.3f} seconds")
+                    click.echo(f"  Performance: {lines_per_sec:.1f} lines/second")
 
         # Test with SQFVM if requested
         if test:
