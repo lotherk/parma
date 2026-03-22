@@ -6,21 +6,21 @@
 // Warning: Import of 'json' not supported in SQF
 // Imported typing.List as List (type hints ignored)
 PUBLIC FUNCTION("any","test_try_except") {
-    _exception_139901825795536 = nil; // Exception tracking
+    _exception_139741637903696 = nil; // Exception tracking
     // Try block
     result = (10 / 2);
     result
     // Except block for ZeroDivisionError
-    if (!isNil "_exception_139901825795536") then {
-        e = _exception_139901825795536;
+    if (!isNil "_exception_139741637903696") then {
+        e = _exception_139741637903696;
         "error"
-        _exception_139901825795536 = nil;
+        _exception_139741637903696 = nil;
     };
     // Except block for Exception
-    if (!isNil "_exception_139901825795536") then {
-        e = _exception_139901825795536;
+    if (!isNil "_exception_139741637903696") then {
+        e = _exception_139741637903696;
         "unknown error"
-        _exception_139901825795536 = nil;
+        _exception_139741637903696 = nil;
     };
     // Finally block
 diag_log "cleanup";
@@ -44,7 +44,7 @@ PUBLIC FUNCTION("any","test_list_comprehension") {
 PUBLIC FUNCTION("any","test_with_statement") {
     // With statement (context manager)
     ctx = "some_context"; // Context manager
-    result = unknown;
+    result = "processing " + str(ctx);
     result
     // End with statement
 };
@@ -52,14 +52,14 @@ PUBLIC FUNCTION("any","test_with_statement") {
 PUBLIC FUNCTION("any","test_json_operations") {
     data = [["name", "test"], ["value", 42], ["items", [1, 2, 3]]];
     json_str = str data;
-    _exception_139901825813072 = nil; // Exception tracking
+    _exception_139741637921808 = nil; // Exception tracking
     // Try block
     parsed = parseSimpleArray json_str;
     parsed
     // Except block for any
-    if (!isNil "_exception_139901825813072") then {
+    if (!isNil "_exception_139741637921808") then {
         [["error", "json parsing not available in SQF"]]
-        _exception_139901825813072 = nil;
+        _exception_139741637921808 = nil;
     };
 };
 
