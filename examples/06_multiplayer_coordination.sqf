@@ -26,7 +26,7 @@ PUBLIC FUNCTION("any","join_team") {
         unknown
     };
     if (player_id == unknown) then {
-unknown pushBack player_id
+unknown pushBack player_id;
         ;
         unknown
     };
@@ -55,7 +55,7 @@ PUBLIC FUNCTION("any","send_team_message") {
     if (sender_id == unknown) then {
         unknown
     };
-diag_log "[Team " + str(team_id) + "] " + str(unknown) + ": " + str(message);
+diag_log unknown;
     ;
     unknown
 };
@@ -65,9 +65,9 @@ PUBLIC FUNCTION("any","assign_team_objective") {
         unknown
     };
     objective = [["id", objective_id], ["description", description], ["assigned_team", team_id], ["status", "active"], ["progress", 0]];
-this.objectives pushBack objective
+this.objectives pushBack objective;
     ;
-unknown pushBack objective_id
+unknown pushBack objective_id;
     ;
     unknown
 };
@@ -94,7 +94,7 @@ PUBLIC FUNCTION("any","get_team_status") {
     members = [];
     { // for loop
         if (member_id == MEMBER("players",nil)) then {
-members pushBack [["id", member_id], ["name", unknown], ["role", unknown], ["status", unknown]]
+members pushBack [["id", member_id], ["name", unknown], ["role", unknown], ["status", unknown]];
             ;
         };
     } forEach unknown;
@@ -102,18 +102,18 @@ members pushBack [["id", member_id], ["name", unknown], ["role", unknown], ["sta
     { // for loop
         { // for loop
             if (unknown == obj_id) then {
-team_objectives pushBack obj
+team_objectives pushBack obj;
                 ;
             };
         } forEach MEMBER("objectives",nil);
     } forEach unknown;
-    [["name", unknown], ["leader", unknown], ["member_count", count members], ["members", members], ["objectives", team_objectives]]
+    [["name", unknown], ["leader", unknown], ["member_count", (count members)], ["members", members], ["objectives", team_objectives]]
 };
 
 PUBLIC FUNCTION("any","get_player_statistics") {
-    total_players = count MEMBER("players",nil);
-    alive_players = count unknown;
-    total_teams = count MEMBER("teams",nil);
+    total_players = (count MEMBER("players",nil));
+    alive_players = (count unknown);
+    total_teams = (count MEMBER("teams",nil));
     side_counts = [];
     { // for loop
         side = unknown;
@@ -149,10 +149,10 @@ MEMBER("update_player_position",["player1", arg])
 diag_log "Multiplayer system initialized";
 ;
 stats = MEMBER("get_player_statistics",nil);
-diag_log "Player Statistics: " + str(stats);
+diag_log unknown;
 ;
 team_status = MEMBER("get_team_status",["alpha_team"]);
 if (team_status) then {
-diag_log "Team Status: " + str(unknown) + " has " + str(unknown) + " members";
+diag_log unknown;
     ;
 };

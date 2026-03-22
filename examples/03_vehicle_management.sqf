@@ -17,7 +17,7 @@ PUBLIC FUNCTION("any","spawn_vehicle") {
     };
     class_name = unknown select (floor random count unknown);
     vehicle = [["id", unknown], ["class", class_name], ["position", position], ["type", vehicle_type], ["side", side], ["fuel", 1.0], ["damage", 0.0], ["crew", []], ["cargo", []], ["locked", unknown]];
-this.vehicles pushBack vehicle
+this.vehicles pushBack vehicle;
     ;
     vehicle
 };
@@ -61,13 +61,13 @@ PUBLIC FUNCTION("any","repair_vehicle") {
 
 PUBLIC FUNCTION("any","add_fuel_station") {
     station = [["position", position], ["radius", radius], ["type", "fuel"]];
-this.fuel_stations pushBack station
+this.fuel_stations pushBack station;
     ;
 };
 
 PUBLIC FUNCTION("any","add_repair_station") {
     station = [["position", position], ["radius", radius], ["type", "repair"]];
-this.repair_stations pushBack station
+this.repair_stations pushBack station;
     ;
 };
 
@@ -83,18 +83,18 @@ PUBLIC FUNCTION("any","find_nearest_service") {
 PUBLIC FUNCTION("any","get_vehicle_status") {
     { // for loop
         if (unknown == vehicle_id) then {
-            [["id", unknown], ["class", unknown], ["fuel", unknown], ["damage", unknown], ["crew_count", count unknown], ["cargo_count", count unknown], ["locked", unknown]]
+            [["id", unknown], ["class", unknown], ["fuel", unknown], ["damage", unknown], ["crew_count", (count unknown)], ["cargo_count", (count unknown)], ["locked", unknown]]
         };
     } forEach MEMBER("vehicles",nil);
     unknown
 };
 
 PUBLIC FUNCTION("any","get_fleet_statistics") {
-    total_vehicles = count MEMBER("vehicles",nil);
-    operational = count unknown;
-    damaged = count unknown;
-    out_of_fuel = count unknown;
-    [["total_vehicles", total_vehicles], ["operational", operational], ["damaged", damaged], ["out_of_fuel", out_of_fuel], ["service_stations", (count MEMBER("fuel_stations",nil) + count MEMBER("repair_stations",nil))]]
+    total_vehicles = (count MEMBER("vehicles",nil));
+    operational = (count unknown);
+    damaged = (count unknown);
+    out_of_fuel = (count unknown);
+    [["total_vehicles", total_vehicles], ["operational", operational], ["damaged", damaged], ["out_of_fuel", out_of_fuel], ["service_stations", ((count MEMBER("fuel_stations",nil)) + (count MEMBER("repair_stations",nil)))]]
 };
 
 ENDCLASS;
@@ -113,13 +113,13 @@ MEMBER("refuel_vehicle",[arg, 0.8])
 ;
 MEMBER("repair_vehicle",[arg, 0.2])
 ;
-diag_log "Spawned " + str(count vehicle_system.vehicles) + " vehicles";
+diag_log unknown;
 ;
 stats = MEMBER("get_fleet_statistics",nil);
-diag_log "Fleet Statistics: " + str(stats);
+diag_log unknown;
 ;
 nearest_fuel = MEMBER("find_nearest_service",[arg, "fuel"]);
 if (nearest_fuel) then {
-diag_log "Nearest fuel station to car: " + str(unknown);
+diag_log unknown;
     ;
 };

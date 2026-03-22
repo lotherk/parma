@@ -17,10 +17,10 @@ PUBLIC FUNCTION("any","add_dialogue") {
     dialogue = [["id", dialogue_id], ["npc_id", npc_id], ["text", text], ["responses", unknown]];
     if (npc_id == MEMBER("conversations",nil)) then {
     };
-unknown pushBack dialogue
+unknown pushBack dialogue;
     ;
     if (npc_id == MEMBER("npcs",nil)) then {
-unknown pushBack dialogue_id
+unknown pushBack dialogue_id;
         ;
     };
 };
@@ -30,7 +30,7 @@ PUBLIC FUNCTION("any","add_response") {
         { // for loop
             if (unknown == dialogue_id) then {
                 response = [["text", response_text], ["next_dialogue", next_dialogue], ["action", action]];
-unknown pushBack response
+unknown pushBack response;
                 ;
             };
         } forEach npc_conversations;
@@ -55,7 +55,7 @@ PUBLIC FUNCTION("any","respond_to_dialogue") {
         unknown
     };
     response = unknown;
-unknown pushBack [["dialogue", unknown], ["response", unknown]]
+unknown pushBack [["dialogue", unknown], ["response", unknown]];
     ;
     if (unknown) then {
 MEMBER("_execute_action",[arg])
@@ -93,7 +93,7 @@ PUBLIC FUNCTION("any","_get_dialogue_by_id") {
 };
 
 PUBLIC FUNCTION("any","_execute_action") {
-diag_log "Executing action: " + str(action);
+diag_log unknown;
     ;
 };
 
@@ -118,10 +118,10 @@ MEMBER("add_response",["shop", "Never mind", "greeting"])
 ;
 dialogue = MEMBER("start_conversation",["player1", "merchant"]);
 if (dialogue) then {
-diag_log str(unknown) + ": " + str(unknown);
+diag_log unknown;
     ;
     { // for loop
-diag_log str((i + 1)) + ". " + str(response);
+diag_log unknown;
         ;
     } forEach enumerate(unknown);
 } else {
@@ -130,6 +130,6 @@ diag_log "Failed to start conversation";
 };
 result = MEMBER("respond_to_dialogue",["player1", 0]);
 if (unknown) then {
-diag_log str(unknown) + ": " + str(unknown);
+diag_log unknown;
     ;
 };

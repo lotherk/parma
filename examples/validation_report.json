@@ -1,0 +1,92 @@
+[
+  {
+    "name": "01_basic_mission",
+    "python_exists": true,
+    "sqf_exists": true,
+    "python_runs": true,
+    "transpiles": true,
+    "sqf_commands": 12,
+    "sqf_valid": true
+  },
+  {
+    "name": "02_ai_spawn_system",
+    "python_exists": true,
+    "sqf_exists": true,
+    "python_runs": true,
+    "transpiles": true,
+    "sqf_commands": 17,
+    "sqf_valid": true
+  },
+  {
+    "name": "03_vehicle_management",
+    "python_exists": true,
+    "sqf_exists": true,
+    "python_runs": true,
+    "transpiles": true,
+    "sqf_commands": 20,
+    "sqf_valid": true
+  },
+  {
+    "name": "04_dialogue_system",
+    "python_exists": true,
+    "sqf_exists": true,
+    "python_runs": true,
+    "transpiles": true,
+    "sqf_commands": 10,
+    "sqf_valid": true
+  },
+  {
+    "name": "05_weather_time_system",
+    "python_exists": true,
+    "sqf_exists": true,
+    "python_runs": true,
+    "transpiles": true,
+    "sqf_commands": 13,
+    "sqf_valid": true
+  },
+  {
+    "name": "06_multiplayer_coordination",
+    "python_exists": true,
+    "sqf_exists": true,
+    "python_runs": true,
+    "transpiles": true,
+    "sqf_commands": 13,
+    "sqf_valid": true
+  },
+  {
+    "name": "07_event_triggers",
+    "python_exists": true,
+    "sqf_exists": true,
+    "python_runs": true,
+    "transpiles": true,
+    "sqf_commands": 14,
+    "sqf_valid": true
+  },
+  {
+    "name": "08_inventory_management",
+    "python_exists": true,
+    "sqf_exists": true,
+    "python_runs": true,
+    "transpiles": true,
+    "sqf_commands": 9,
+    "sqf_valid": true
+  },
+  {
+    "name": "09_scoring_statistics",
+    "python_exists": true,
+    "sqf_exists": true,
+    "python_runs": true,
+    "transpiles": true,
+    "sqf_commands": 16,
+    "sqf_valid": true
+  },
+  {
+    "name": "10_state_machine_logic",
+    "python_exists": true,
+    "sqf_exists": true,
+    "python_runs": true,
+    "transpiles": true,
+    "sqf_commands": 10,
+    "sqf_valid": true
+  }
+]

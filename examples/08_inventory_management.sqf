@@ -67,7 +67,7 @@ PUBLIC FUNCTION("any","get_inventory_contents") {
     contents = [];
     { // for loop
         item_def = unknown;
-contents pushBack [["id", item_id], ["quantity", quantity], ["type", unknown], ["weight", (unknown * quantity)], ["slots", (unknown * quantity)]]
+contents pushBack [["id", item_id], ["quantity", quantity], ["type", unknown], ["weight", (unknown * quantity)], ["slots", (unknown * quantity)]];
         ;
     } forEach MEMBER("items",nil);
     [["contents", contents], ["total_weight", unknown], ["max_weight", unknown], ["used_slots", unknown], ["max_slots", unknown]]
@@ -98,16 +98,16 @@ MEMBER("add_item",["player1", "helmet", 1])
 ;
 contents = MEMBER("get_inventory_contents",["player1"]);
 if (contents) then {
-diag_log "Player1 inventory: " + str(count unknown) + " items";
+diag_log unknown;
     ;
-diag_log "Weight: " + str(unknown) + "/" + str(unknown);
+diag_log unknown;
     ;
-diag_log "Slots: " + str(unknown) + "/" + str(unknown);
+diag_log unknown;
     ;
 };
 success = MEMBER("transfer_item",["player1", "player2", "medkit", 1]);
-diag_log "Item transfer successful: " + str(success);
+diag_log unknown;
 ;
 has_rifle = MEMBER("has_item",["player1", "rifle"]);
-diag_log "Player1 has rifle: " + str(has_rifle);
+diag_log unknown;
 ;

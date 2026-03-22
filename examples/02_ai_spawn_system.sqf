@@ -16,7 +16,7 @@ PUBLIC FUNCTION("any","spawn_unit") {
     };
     class_name = unknown select (floor random count unknown);
     unit = [["id", unknown], ["class", class_name], ["position", position], ["side", side], ["skill", skill], ["group", unknown], ["alive", unknown]];
-this.spawned_units pushBack unit
+this.spawned_units pushBack unit;
     ;
     unit
 };
@@ -25,16 +25,16 @@ PUBLIC FUNCTION("any","spawn_group") {
     group_id = unknown;
     group = [["id", group_id], ["units", []], ["formation", formation], ["side", side], ["leader", unknown]];
     leader = MEMBER("spawn_unit",[leader_position, side, "rifleman", 0.7]);
-unknown pushBack leader
+unknown pushBack leader;
     ;
     for "_i" from 0 to ((size - 1) - 1) do {
         offset = MEMBER("_calculate_formation_offset",[i, formation]);
         unit_pos = [(unknown + unknown), (unknown + unknown), unknown];
         unit = MEMBER("spawn_unit",[unit_pos, side, "rifleman", 0.5]);
-unknown pushBack unit
+unknown pushBack unit;
         ;
     };
-this.groups pushBack group
+this.groups pushBack group;
     ;
     group
 };
@@ -76,9 +76,9 @@ PUBLIC FUNCTION("any","set_group_behavior") {
 };
 
 PUBLIC FUNCTION("any","get_spawn_statistics") {
-    total_units = count MEMBER("spawned_units",nil);
-    alive_units = count unknown;
-    total_groups = count MEMBER("groups",nil);
+    total_units = (count MEMBER("spawned_units",nil));
+    alive_units = (count unknown);
+    total_groups = (count MEMBER("groups",nil));
     [["total_units", total_units], ["alive_units", alive_units], ["dead_units", (total_units - alive_units)], ["total_groups", total_groups]]
 };
 
@@ -101,8 +101,8 @@ MEMBER("move_group",[arg, arg])
 ;
 MEMBER("move_group",[arg, arg])
 ;
-diag_log "Spawned " + str(count ai_system.spawned_units) + " AI units in " + str(count ai_system.groups) + " groups";
+diag_log unknown;
 ;
 stats = MEMBER("get_spawn_statistics",nil);
-diag_log "Spawn Statistics: " + str(stats);
+diag_log unknown;
 ;

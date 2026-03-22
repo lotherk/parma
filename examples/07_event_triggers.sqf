@@ -42,10 +42,10 @@ PUBLIC FUNCTION("any","check_trigger_activation") {
 PUBLIC FUNCTION("any","activate_event") {
     if (unknown) then {
         event = unknown;
-this.active_events pushBack event_id
+this.active_events pushBack event_id;
         ;
         { // for loop
-diag_log "Executing event action: " + str(action);
+diag_log unknown;
             ;
         } forEach unknown;
         unknown
@@ -74,7 +74,7 @@ PUBLIC FUNCTION("any","update_system") {
     activated_triggers = [];
     { // for loop
         if (MEMBER("check_trigger_activation",[trigger_id, player_positions])) then {
-activated_triggers pushBack trigger_id
+activated_triggers pushBack trigger_id;
             ;
             if ("event" == trigger) then {
 MEMBER("activate_event",[arg])
@@ -102,12 +102,12 @@ MEMBER("add_trigger_event",["extraction_point", "extraction_available"])
 ;
 player_positions = [[900, 1950, 0], [950, 2050, 0]];
 activated = MEMBER("update_system",[player_positions]);
-diag_log "Activated triggers: " + str(activated);
+diag_log unknown;
 ;
 status = MEMBER("get_trigger_status",["ambush_zone"]);
 if (status) then {
-diag_log "Ambush zone status: activated=" + str(unknown) + ", count=" + str(unknown);
+diag_log unknown;
     ;
 };
-diag_log "Active events: " + str(event_system.active_events);
+diag_log unknown;
 ;

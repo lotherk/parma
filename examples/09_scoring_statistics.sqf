@@ -84,7 +84,7 @@ MEMBER("sort",nil)
 };
 
 PUBLIC FUNCTION("any","get_mission_summary") {
-    total_players = count MEMBER("player_scores",nil);
+    total_players = (count MEMBER("player_scores",nil));
     total_score = sum(unknown);
     avg_score = unknown;
     kill_stats = [["infantry", sum(unknown)], ["vehicle", sum(unknown)], ["aircraft", sum(unknown)]];
@@ -122,16 +122,16 @@ team_scores = MEMBER("calculate_team_scores",nil);
 summary = MEMBER("get_mission_summary",nil);
 diag_log "Mission Summary:";
 ;
-diag_log "Total Players: " + str(unknown);
+diag_log unknown;
 ;
-diag_log "Total Score: " + str(unknown);
+diag_log unknown;
 ;
-diag_log "Average Score: " + str(unknown);
+diag_log unknown;
 ;
-diag_log "Total Kills: " + str(unknown);
+diag_log unknown;
 ;
 rankings = MEMBER("get_player_rankings",nil);
 { // for loop
-diag_log str(i) + ". " + str(unknown) + ": " + str(unknown) + " points";
+diag_log unknown;
     ;
 } forEach enumerate(unknown, 1);

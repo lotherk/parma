@@ -62,7 +62,7 @@ PUBLIC FUNCTION("any","_change_state") {
     };
     if (new_state != old_state) then {
         MEMBER("current_state",new_state);
-diag_log "Mission state changed: " + str(old_state) + " -> " + str(new_state);
+diag_log unknown;
         ;
         if ("on_enter" == unknown) then {
             ;
@@ -119,7 +119,7 @@ PUBLIC FUNCTION("any","_enter_debriefing") {
 diag_log "Welcome back, soldier. Mission debriefing:";
     ;
     success = MEMBER("current_state",nil) == "debriefing";
-diag_log "Mission Status: " + str(unknown);
+diag_log unknown;
     ;
 };
 
@@ -146,25 +146,25 @@ ENDCLASS;
 mission = ["new"] call MissionStateMachine;
 MEMBER("start_mission",nil)
 ;
-diag_log "Initial state: " + str(unknown);
+diag_log unknown;
 ;
 MEMBER("trigger_event",["accept"])
 ;
-diag_log "After briefing: " + str(unknown);
+diag_log unknown;
 ;
 MEMBER("trigger_event",["landed"])
 ;
-diag_log "After insertion: " + str(unknown);
+diag_log unknown;
 ;
 MEMBER("trigger_event",["target_found"])
 ;
-diag_log "After recon: " + str(unknown);
+diag_log unknown;
 ;
 for "_i" from 0 to (50 - 1) do {
 MEMBER("update",[1])
     ;
 };
-diag_log "Final state: " + str(unknown);
+diag_log unknown;
 ;
-diag_log "Mission completed in " + str(mission.mission_timer) + " seconds";
+diag_log unknown;
 ;
