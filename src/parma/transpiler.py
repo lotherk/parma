@@ -282,6 +282,11 @@ class SQFTranspiler(ast.NodeVisitor):
                         args.append(f'"{arg.s}"')
                     elif isinstance(arg, ast.Num):
                         args.append(str(arg.n))
+                    elif isinstance(arg, ast.Constant):
+                        if isinstance(arg.value, str):
+                            args.append(f'"{arg.value}"')
+                        else:
+                            args.append(str(arg.value))
                     elif isinstance(arg, ast.Name):
                         args.append(arg.id)
                     else:
@@ -300,6 +305,11 @@ class SQFTranspiler(ast.NodeVisitor):
                         args.append(f'"{arg.s}"')
                     elif isinstance(arg, ast.Num):
                         args.append(str(arg.n))
+                    elif isinstance(arg, ast.Constant):
+                        if isinstance(arg.value, str):
+                            args.append(f'"{arg.value}"')
+                        else:
+                            args.append(str(arg.value))
                     elif isinstance(arg, ast.Name):
                         args.append(arg.id)
                     else:
@@ -362,8 +372,11 @@ class SQFTranspiler(ast.NodeVisitor):
                         args.append(f'"{arg.s}"')
                     elif isinstance(arg, ast.Num):
                         args.append(str(arg.n))
-                    elif isinstance(arg, ast.Name):
-                        args.append(arg.id)
+                    elif isinstance(arg, ast.Constant):
+                        if isinstance(arg.value, str):
+                            args.append(f'"{arg.value}"')
+                        else:
+                            args.append(str(arg.value))
                     else:
                         args.append(self._visit_expr(arg))
                 args_str = ", ".join(args)
@@ -381,6 +394,11 @@ class SQFTranspiler(ast.NodeVisitor):
                         args.append(f'"{arg.s}"')
                     elif isinstance(arg, ast.Num):
                         args.append(str(arg.n))
+                    elif isinstance(arg, ast.Constant):
+                        if isinstance(arg.value, str):
+                            args.append(f'"{arg.value}"')
+                        else:
+                            args.append(str(arg.value))
                     elif isinstance(arg, ast.Name):
                         args.append(arg.id)
                     else:
@@ -399,6 +417,9 @@ class SQFTranspiler(ast.NodeVisitor):
             if isinstance(arg, ast.Str):
                 # Simple string
                 self.output.append(f'diag_log "{arg.s}";')
+            elif isinstance(arg, ast.Constant) and isinstance(arg.value, str):
+                # Constant string (Python 3.8+)
+                self.output.append(f'diag_log "{arg.value}";')
             elif isinstance(arg, ast.BinOp) and self._is_string_concatenation(arg):
                 # String concatenation - convert to format[]
                 parts = self._extract_string_parts(arg)
@@ -784,6 +805,17 @@ class SQFTranspiler(ast.NodeVisitor):
             return str(node.n)
         elif isinstance(node, ast.Str):
             return f'"{node.s}"'
+        elif isinstance(node, ast.Constant):
+            # Handle Python 3.8+ ast.Constant (preferred over deprecated ast.Str/ast.Num)
+            if isinstance(node.value, str):
+                return f'"{node.value}"'
+            else:
+                return str(node.value)
+            # Handle Python 3.8+ ast.Constant
+            if isinstance(node.value, str):
+                return f'"{node.value}"'
+            else:
+                return str(node.value)
         elif isinstance(node, ast.Attribute):
             obj_name = node.value.id if isinstance(node.value, ast.Name) else "unknown"
             if obj_name == "self" and self.current_class:
