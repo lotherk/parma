@@ -179,15 +179,33 @@ class SQFTranspiler(ast.NodeVisitor):
 
             # Handle specific imports that can be mapped to SQF
             if module_name == "math":
-                if name in ["sqrt", "sin", "cos", "pi"]:
+                if name in ["sqrt", "sin", "cos", "tan", "asin", "acos", "atan", "atan2", "pi", "e", "floor", "ceil", "abs", "pow", "log", "exp"]:
                     self._add_line(f"// Imported math.{name} as {as_name}")
                 else:
                     self._add_line(f"// Warning: math.{name} not supported in SQF")
             elif module_name == "random":
-                if name in ["uniform", "choice", "randint"]:
+                if name in ["uniform", "choice", "randint", "random", "seed", "shuffle", "sample"]:
                     self._add_line(f"// Imported random.{name} as {as_name}")
                 else:
                     self._add_line(f"// Warning: random.{name} not supported in SQF")
+            elif module_name == "json":
+                if name in ["loads", "dumps"]:
+                    self._add_line(f"// Imported json.{name} as {as_name}")
+                else:
+                    self._add_line(f"// Warning: json.{name} not supported in SQF")
+            elif module_name == "datetime":
+                if name in ["datetime", "date", "time", "timedelta"]:
+                    self._add_line(f"// Imported datetime.{name} as {as_name}")
+                else:
+                    self._add_line(f"// Warning: datetime.{name} not supported in SQF")
+            elif module_name == "collections":
+                if name in ["defaultdict", "Counter", "deque"]:
+                    self._add_line(f"// Imported collections.{name} as {as_name}")
+                else:
+                    self._add_line(f"// Warning: collections.{name} not supported in SQF")
+            elif module_name == "typing":
+                # Type hints are ignored in SQF
+                self._add_line(f"// Imported typing.{name} as {as_name} (type hints ignored)")
             else:
                 self._add_line(f"// Warning: Import from '{module_name}' not supported in SQF")
 
@@ -220,6 +238,37 @@ class SQFTranspiler(ast.NodeVisitor):
                 self._handle_math_sin(node)
             elif func_name == "cos":
                 self._handle_math_cos(node)
+            elif func_name == "tan":
+                self._handle_math_tan(node)
+            elif func_name == "asin":
+                self._handle_math_asin(node)
+            elif func_name == "acos":
+                self._handle_math_acos(node)
+            elif func_name == "atan":
+                self._handle_math_atan(node)
+            elif func_name == "atan2":
+                self._handle_math_atan2(node)
+            elif func_name == "floor":
+                self._handle_math_floor(node)
+            elif func_name == "ceil":
+                self._handle_math_ceil(node)
+            elif func_name == "pow":
+                self._handle_math_pow(node)
+            elif func_name == "log":
+                self._handle_math_log(node)
+            elif func_name == "exp":
+                self._handle_math_exp(node)
+            # Handle more random functions
+            elif func_name == "random":
+                self._handle_random_random(node)
+            elif func_name == "randint":
+                self._handle_random_randint(node)
+            elif func_name == "seed":
+                self._handle_random_seed(node)
+            elif func_name == "shuffle":
+                self._handle_random_shuffle(node)
+            elif func_name == "sample":
+                self._handle_random_sample(node)
             # Handle random functions
             elif func_name == "uniform":
                 self._handle_random_uniform(node)
@@ -286,6 +335,25 @@ class SQFTranspiler(ast.NodeVisitor):
                 self._handle_random_uniform(node)
             elif method == "choice" and obj_module == "random":
                 self._handle_random_choice(node)
+            elif method == "randint" and obj_module == "random":
+                self._handle_random_randint(node)
+            elif method == "random" and obj_module == "random":
+                self._handle_random_random(node)
+            elif method == "seed" and obj_module == "random":
+                self._handle_random_seed(node)
+            elif method == "shuffle" and obj_module == "random":
+                self._handle_random_shuffle(node)
+            elif method == "sample" and obj_module == "random":
+                self._handle_random_sample(node)
+            # Math functions
+            elif method in ["sqrt", "sin", "cos", "tan", "asin", "acos", "atan", "floor", "ceil", "log", "exp"] and obj_module == "math":
+                handler_name = f"_handle_math_{method}"
+                if hasattr(self, handler_name):
+                    getattr(self, handler_name)(node)
+            elif method == "atan2" and obj_module == "math":
+                self._handle_math_atan2(node)
+            elif method == "pow" and obj_module == "math":
+                self._handle_math_pow(node)
             elif method == "append":
                 # List append
                 args = []
@@ -438,6 +506,92 @@ class SQFTranspiler(ast.NodeVisitor):
             # Convert radians to degrees
             self.output.append(f"cos ({arg} * 180 / 3.14159265359)")
 
+    def _handle_math_tan(self, node: ast.Call) -> None:
+        """Handle math.tan() - convert to SQF tan."""
+        if node.args:
+            arg = self._visit_expr(node.args[0])
+            # Convert radians to degrees
+            self.output.append(f"tan ({arg} * 180 / 3.14159265359)")
+
+    def _handle_math_asin(self, node: ast.Call) -> None:
+        """Handle math.asin() - convert to SQF asin."""
+        if node.args:
+            arg = self._visit_expr(node.args[0])
+            self.output.append(f"asin {arg}")
+
+    def _handle_math_acos(self, node: ast.Call) -> None:
+        """Handle math.acos() - convert to SQF acos."""
+        if node.args:
+            arg = self._visit_expr(node.args[0])
+            self.output.append(f"acos {arg}")
+
+    def _handle_math_atan(self, node: ast.Call) -> None:
+        """Handle math.atan() - convert to SQF atan."""
+        if node.args:
+            arg = self._visit_expr(node.args[0])
+            self.output.append(f"atan {arg}")
+
+    def _handle_math_atan2(self, node: ast.Call) -> None:
+        """Handle math.atan2() - convert to SQF atan2."""
+        if len(node.args) >= 2:
+            y = self._visit_expr(node.args[0])
+            x = self._visit_expr(node.args[1])
+            self.output.append(f"atan2 ({y}, {x})")
+
+    def _handle_math_floor(self, node: ast.Call) -> None:
+        """Handle math.floor() - convert to SQF floor."""
+        if node.args:
+            arg = self._visit_expr(node.args[0])
+            self.output.append(f"floor {arg}")
+
+    def _handle_math_ceil(self, node: ast.Call) -> None:
+        """Handle math.ceil() - convert to SQF ceil."""
+        if node.args:
+            arg = self._visit_expr(node.args[0])
+            self.output.append(f"ceil {arg}")
+
+    def _handle_math_pow(self, node: ast.Call) -> None:
+        """Handle math.pow() - convert to SQF ^ operator."""
+        if len(node.args) >= 2:
+            base = self._visit_expr(node.args[0])
+            exp = self._visit_expr(node.args[1])
+            self.output.append(f"({base} ^ {exp})")
+
+    def _handle_math_log(self, node: ast.Call) -> None:
+        """Handle math.log() - convert to SQF ln."""
+        if node.args:
+            arg = self._visit_expr(node.args[0])
+            self.output.append(f"ln {arg}")
+
+    def _handle_math_exp(self, node: ast.Call) -> None:
+        """Handle math.exp() - convert to SQF exp."""
+        if node.args:
+            arg = self._visit_expr(node.args[0])
+            self.output.append(f"exp {arg}")
+
+    def _handle_random_random(self, node: ast.Call) -> None:
+        """Handle random.random() - convert to SQF random."""
+        self.output.append("random 1")
+
+    def _handle_random_randint(self, node: ast.Call) -> None:
+        """Handle random.randint() - convert to SQF floor random."""
+        if len(node.args) >= 2:
+            min_val = self._visit_expr(node.args[0])
+            max_val = self._visit_expr(node.args[1])
+            self.output.append(f"({min_val} + floor random ({max_val} - {min_val} + 1))")
+
+    def _handle_random_seed(self, node: ast.Call) -> None:
+        """Handle random.seed() - not directly supported in SQF."""
+        self._add_line("// Warning: random.seed() not supported in SQF")
+
+    def _handle_random_shuffle(self, node: ast.Call) -> None:
+        """Handle random.shuffle() - not directly supported in SQF."""
+        self._add_line("// Warning: random.shuffle() not supported in SQF")
+
+    def _handle_random_sample(self, node: ast.Call) -> None:
+        """Handle random.sample() - not directly supported in SQF."""
+        self._add_line("// Warning: random.sample() not supported in SQF")
+
     def visit_Assign(self, node: ast.Assign) -> None:
         """Handle variable assignments."""
         if len(node.targets) == 1:
@@ -554,6 +708,50 @@ class SQFTranspiler(ast.NodeVisitor):
 
             self.indent_level -= 1
             self._add_line(f"}} forEach {iter_expr};")
+
+    def visit_Try(self, node: ast.Try) -> None:
+        """Handle try/except blocks - SQF doesn't have exceptions, so we comment them."""
+        self._add_line("// Try block start")
+        self._push_scope()
+
+        # Handle the try body
+        for stmt in node.body:
+            self.visit(stmt)
+
+        self._pop_scope()
+
+        # Handle except handlers
+        for handler in node.handlers:
+            exception_type = "any"
+            if handler.type and isinstance(handler.type, ast.Name):
+                exception_type = handler.type.id
+
+            if handler.name:
+                # Exception variable (commented since SQF doesn't support exceptions)
+                self._add_line(f"// Catch {exception_type} as {handler.name} (exceptions not supported in SQF)")
+            else:
+                self._add_line(f"// Catch {exception_type} (exceptions not supported in SQF)")
+
+            self._push_scope()
+            for stmt in handler.body:
+                self.visit(stmt)
+            self._pop_scope()
+
+        # Handle finally block
+        if node.finalbody:
+            self._add_line("// Finally block")
+            for stmt in node.finalbody:
+                self.visit(stmt)
+
+        self._add_line("// Try block end")
+
+    def visit_Raise(self, node: ast.Raise) -> None:
+        """Handle raise statements - convert to SQF diag_log for debugging."""
+        if node.exc:
+            exc_msg = self._visit_expr(node.exc)
+            self._add_line(f'diag_log format ["Exception raised: %1", {exc_msg}];')
+        else:
+            self._add_line('diag_log "Exception re-raised";')
 
     def visit_Subscript(self, node: ast.Subscript) -> str:
         """Handle subscript access like dict[key] or list[index] with proper SQF syntax."""
