@@ -39,20 +39,20 @@ jobs:
 
     - name: Test basic transpilation
       run: |
-        parma compile demo.py
+        parma compile examples/demo.py
         ls -la *.sqf
 
     - name: Test game framework transpilation
       run: |
-        parma compile game_framework.py
-        parma compile open_world_game.py
+        parma compile examples/game_framework.py
+        parma compile examples/open_world_game.py
 
     - name: Run comprehensive tests
-      run: python test_game_development.py
+      run: python -m pytest tests/ -v
 
     - name: Test SQFVM integration (if available)
       run: |
-        parma compile simple_mission_fixed.py --test || echo "SQFVM test skipped"
+        parma compile examples/simple_mission_fixed.py --test || echo "SQFVM test skipped"
 
     - name: Build package
       run: python -m build
@@ -63,9 +63,9 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Build Docker image
-      run: docker build -f Dockerfile.simple -t parma-test .
+      run: docker build -f docker/Dockerfile.simple -t parma-test .
 
     - name: Test Docker build
       run: |
         docker run --rm parma-test parma --version
-        docker run --rm -v $(pwd):/workspace parma-test parma compile demo.py
+        docker run --rm -v $(pwd):/workspace parma-test parma compile examples/demo.py

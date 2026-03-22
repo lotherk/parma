@@ -16,18 +16,18 @@ BUILD_TYPE=${1:-simple}
 case $BUILD_TYPE in
     simple)
         echo "Building Parma transpiler with Docker (simple mode)..."
-        docker build -f Dockerfile.simple -t parma:latest .
+        docker build -f docker/Dockerfile.simple -t parma:latest .
         IMAGE_NAME="parma:latest"
         ;;
     full)
         echo "Building Parma with Docker (full mode with SQFVM testing)..."
-        docker build -f Dockerfile.full -t parma-full:latest .
+        docker build -f docker/Dockerfile.full -t parma-full:latest .
         IMAGE_NAME="parma-full:latest"
         ;;
     cross)
         echo "Building Parma with Docker (cross-compilation mode)..."
         echo "Note: Cross-compilation is experimental and may not work perfectly."
-        docker build -f Dockerfile.cross -t parma-cross:latest .
+        docker build -f docker/Dockerfile.cross -t parma-cross:latest .
         IMAGE_NAME="parma-cross:latest"
         ;;
     *)

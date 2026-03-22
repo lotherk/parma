@@ -55,13 +55,13 @@ For isolated builds without affecting your system:
 
 ```bash
 # Simple build (Python transpiler only)
-./build-docker.sh simple
+./tools/build-docker.sh simple
 
 # Full build (includes SQFVM testing)
-./build-docker.sh full
+./tools/build-docker.sh full
 
 # Cross-compilation build (includes Windows DLL, experimental)
-./build-docker.sh cross
+./tools/build-docker.sh cross
 ```
 
 ## Usage
@@ -580,10 +580,42 @@ See the `demo.py` and `demo.sqf` files in this repository for a complete working
 ## Project Structure
 
 ```
-src/parma/
-├── __init__.py          # Package initialization
-├── cli.py               # Command-line interface
-└── transpiler.py        # Core transpilation logic
+parma/
+├── src/parma/              # Python source code
+│   ├── __init__.py         # Package initialization
+│   ├── cli.py              # Command-line interface
+│   └── transpiler.py       # Core transpilation logic
+├── tests/                  # Test suite
+│   ├── __init__.py
+│   ├── test_transpiler.py  # Unit tests
+│   └── test_game_development.py  # Integration tests
+├── examples/               # Example scripts and demos
+│   ├── demo.py             # Basic demo
+│   ├── game_framework.py   # Game framework examples
+│   ├── open_world_game.py  # Complete game example
+│   └── simple_mission*.py  # Various mission examples
+├── dll/                    # C++ extension for ArmA
+│   ├── ParmaExtension.cpp  # Runtime Python execution
+│   ├── CMakeLists.txt      # Build configuration
+│   └── Toolchain-*.cmake   # Cross-compilation toolchains
+├── docker/                 # Docker build configurations
+│   ├── Dockerfile.simple   # Basic Python build
+│   ├── Dockerfile.full     # With SQFVM testing
+│   └── Dockerfile.cross    # Cross-compilation
+├── docs/                   # Documentation
+│   ├── CONTRIBUTING.md     # Contribution guidelines
+│   ├── GAME_DEVELOPMENT_GUIDE.md  # Game dev manual
+│   ├── PARMA_TECHNICAL_REFERENCE.md  # Technical reference
+│   └── SQF_SYNTAX_REFERENCE.md  # SQF syntax guide
+├── tools/                  # Build and utility scripts
+│   ├── build-docker.sh     # Docker build script
+│   ├── sqf_command_db.py   # SQF command database
+│   └── sqf_validator.py    # SQF validation tools
+├── .github/workflows/      # CI/CD pipelines
+├── pyproject.toml          # Project configuration
+├── pytest.ini             # Test configuration
+├── .gitignore             # Git ignore rules
+└── README.md              # This file
 ```
 
 ## Development
@@ -595,7 +627,7 @@ src/parma/
 pip install -e ".[dev]"
 
 # Run tests
-pytest
+python -m pytest tests/
 
 # Run linter
 flake8 src/
@@ -655,14 +687,20 @@ cmake --build . --config Release
 Build and run with Docker:
 
 ```bash
-# Build the image
-docker build -t parma .
+# Simple build (recommended for most users)
+./tools/build-docker.sh simple
 
-# Compile a file
-docker run -v $(pwd):/workspace parma compile test_python.py
+# Full build (with SQFVM testing)
+./tools/build-docker.sh full
+
+# Cross-compilation (experimental)
+./tools/build-docker.sh cross
+
+# Manual Docker usage
+docker run -it --rm -v $(pwd):/workspace parma:latest parma compile examples/demo.py
 
 # Interactive shell
-docker run -it -v $(pwd):/workspace parma bash
+docker run -it --rm -v $(pwd):/workspace parma:latest bash
 ```
 
 ## Contributing
