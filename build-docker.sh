@@ -4,8 +4,9 @@
 set -e
 
 usage() {
-    echo "Usage: $0 [simple|cross]"
+    echo "Usage: $0 [simple|full|cross]"
     echo "  simple - Build Parma transpiler only (no DLL)"
+    echo "  full   - Build Parma with SQFVM testing support"
     echo "  cross  - Build with cross-compilation for Windows DLL (experimental)"
     exit 1
 }
@@ -17,6 +18,11 @@ case $BUILD_TYPE in
         echo "Building Parma transpiler with Docker (simple mode)..."
         docker build -f Dockerfile.simple -t parma:latest .
         IMAGE_NAME="parma:latest"
+        ;;
+    full)
+        echo "Building Parma with Docker (full mode with SQFVM testing)..."
+        docker build -f Dockerfile.full -t parma-full:latest .
+        IMAGE_NAME="parma-full:latest"
         ;;
     cross)
         echo "Building Parma with Docker (cross-compilation mode)..."

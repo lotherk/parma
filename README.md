@@ -57,6 +57,9 @@ For isolated builds without affecting your system:
 # Simple build (Python transpiler only)
 ./build-docker.sh simple
 
+# Full build (includes SQFVM testing)
+./build-docker.sh full
+
 # Cross-compilation build (includes Windows DLL, experimental)
 ./build-docker.sh cross
 ```
@@ -263,7 +266,10 @@ print(f"Loot System Stats: {stats}")
 #### Compile the Advanced Demo:
 
 ```bash
-parma compile demo.py
+parma compile my_script.py
+parma compile my_script.py -o output.sqf
+parma compile my_script.py --verbose
+parma compile my_script.py --test  # Test with SQFVM
 ```
 
 #### Generated SQF (`demo.sqf`) - Real Parma Output:

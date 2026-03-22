@@ -1,8 +1,28 @@
 # Multi-stage Dockerfile for building Parma and its components
+# Stage 0: SQFVM builder
+FROM debian:bookworm-slim AS sqfvm-builder
+
+# Install build dependencies for SQFVM
+RUN apt-get update && apt-get install -y \
+    cmake \
+    make \
+    g++ \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+
+# Clone and build SQFVM
+RUN git clone https://github.com/SQFvm/runtime.git sqfvm && \
+    cd sqfvm && \
+    mkdir build && cd build && \
+    cmake .. -DCMAKE_BUILD_TYPE=Release && \
+    make -j$(nproc)
+
 # Stage 1: Cross-compilation environment for Windows DLL
 FROM debian:bookworm-slim AS dll-builder
 
-# Install cross-compilation tools
+# Install cross-compilation tools and build dependencies
 RUN apt-get update && apt-get install -y \
     mingw-w64 \
     cmake \
@@ -79,6 +99,9 @@ FROM python:3.11-slim
 RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
+
+# Copy SQFVM from sqfvm-builder
+COPY --from=sqfvm-builder /build/sqfvm/build/sqf-vm /usr/local/bin/sqf-vm
 
 # Copy built DLLs from dll-builder
 COPY --from=dll-builder /build/dll/build/ParmaExtension.dll /app/dll/

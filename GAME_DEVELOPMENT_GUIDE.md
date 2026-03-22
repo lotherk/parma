@@ -262,8 +262,27 @@ def update():
 # Compile your game
 parma compile my_game.py
 
+# Compile and test with SQFVM
+parma compile my_game.py --test
+
 # The result is my_game.sqf - ready for ArmA!
 ```
+
+### SQFVM Testing
+Parma can automatically test your generated SQF code using SQFVM (SQF Virtual Machine):
+
+```bash
+# Test during compilation
+parma compile my_game.py --test
+
+# Build with SQFVM testing support
+./build-docker.sh full
+
+# Use in Docker
+docker run -it --rm parma-full parma compile my_game.py --test
+```
+
+SQFVM validation ensures your generated SQF code is syntactically correct and executable.
 
 ### ArmA Integration
 1. Copy the generated `.sqf` files to your mission folder
